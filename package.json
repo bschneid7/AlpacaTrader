@@ -14,6 +14,12 @@
     "shared-build": "cd shared && npm run build",
     "shared-dev": "cd shared && npm run dev",
     "start": "concurrently -n \"client,server\" \"npm run client\" \"npm run server\"",
+    "start:prod": "cd server && node dist/server.js",
+    "build": "npm run build:shared && npm run build:client && npm run build:server",
+    "build:shared": "cd shared && npm install && npm run build",
+    "build:client": "cd client && npm install && npm run build",
+    "build:server": "cd server && npm install && npm run build",
+    "deploy": "./deploy.sh",
     "lint": "concurrently -n \"client,server,shared\" \"cd client && npm run lint\" \"cd server && npm run lint\" \"cd shared && npm run lint\"",
     "debug": "concurrently -n \"client,server\" \"npm run client\" \"cross-env NODE_OPTIONS=--inspect-brk=9229 npm run server\""
   },

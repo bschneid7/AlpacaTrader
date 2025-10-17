@@ -1,0 +1,77 @@
+# Dependencies
+node_modules/
+*/node_modules/
+npm-debug.log
+yarn-error.log
+
+# Build outputs (will be created in Docker)
+dist/
+build/
+*/dist/
+*/build/
+
+# Environment files
+.env
+.env.*
+server/.env
+server/.env.*
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
+
+# Test files
+coverage/
+.nyc_output/
+test/
+tests/
+**/*.test.ts
+**/*.spec.ts
+
+# Documentation
+*.md
+!README.md
+docs/
+
+# Deployment scripts
+deploy.sh
+scripts/
+
+# Docker files
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# PM2
+.pm2/
+ecosystem.config.js
+
+# Backup files
+*.backup
+*.bak
+*.tar.gz
+*.zip
+
+# Cache
+.cache/
+.eslintcache
