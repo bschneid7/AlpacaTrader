@@ -71,7 +71,10 @@ router.get('/account', requireUser(), async (req: AuthRequest, res: Response) =>
     res.status(200).json(accountOverview);
   } catch (error: unknown) {
     if (error instanceof Error) {
-      console.error(`Error fetching account overview: ${error.message}`);
+      // Only log if it's NOT the expected "account not connected" error
+      if (error.message !== 'Alpaca account not connected') {
+        console.error(`Error fetching account overview: ${error.message}`);
+      }
       res.status(400).json({ error: error.message });
     } else {
       console.error('Unknown error fetching account overview');
@@ -97,7 +100,10 @@ router.get('/positions', requireUser(), async (req: AuthRequest, res: Response) 
     res.status(200).json({ positions });
   } catch (error: unknown) {
     if (error instanceof Error) {
-      console.error(`Error fetching positions: ${error.message}`);
+      // Only log if it's NOT the expected "account not connected" error
+      if (error.message !== 'Alpaca account not connected') {
+        console.error(`Error fetching positions: ${error.message}`);
+      }
       res.status(400).json({ error: error.message });
     } else {
       console.error('Unknown error fetching positions');
