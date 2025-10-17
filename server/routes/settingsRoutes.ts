@@ -7,14 +7,25 @@ const router = express.Router();
 // Description: Get user account settings
 // Endpoint: GET /api/settings
 // Request: {}
-// Response: { settings: object }
+// Response: { accountNumber: string, accountType: string, accountStatus: string, emailNotifications: boolean, email: string, alertFrequency: string }
 router.get('/', requireUser, async (req, res) => {
   console.log(`[SettingsRoutes] GET /api/settings - User: ${req.user._id}`);
 
   try {
     const settings = await settingsService.getAccountSettings(req.user._id.toString());
 
-    res.status(200).json({ settings });
+    // Transform the response to match frontend expectations
+    const response = {
+      accountNumber: settings.alpacaAccount?.accountNumber || '',
+      accountType: settings.alpacaAccount?.accountType || '',
+      accountStatus: settings.alpacaAccount?.connected ? 'Active' : 'Not Connected',
+      emailNotifications: settings.notificationPreferences?.emailNotifications || false,
+      email: settings.notificationPreferences?.emailAddress || settings.user?.email || '',
+      alertFrequency: settings.notificationPreferences?.alertFrequency || 'immediate',
+    };
+
+    console.log(`[SettingsRoutes] Successfully retrieved settings for user: ${req.user._id}`);
+    res.status(200).json(response);
   } catch (error: any) {
     console.error(`[SettingsRoutes] Error fetching settings:`, error);
     res.status(500).json({

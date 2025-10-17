@@ -16,8 +16,7 @@ const activityLogSchema = new Schema<IActivityLog>({
   userId: {
     type: Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
-    index: true
+    required: true
   },
   type: {
     type: String,
@@ -46,11 +45,10 @@ const activityLogSchema = new Schema<IActivityLog>({
   },
   timestamp: {
     type: Date,
-    default: Date.now,
-    index: true
+    default: Date.now
   }
 }, {
-  timestamps: true
+  timestamps: false // Disable automatic timestamps to avoid duplicate createdAt index
 });
 
 // Compound indexes for efficient queries

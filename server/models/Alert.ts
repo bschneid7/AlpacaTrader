@@ -24,8 +24,7 @@ const alertSchema = new Schema<IAlert>({
   userId: {
     type: Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
-    index: true
+    required: true
   },
   type: {
     type: String,
@@ -54,27 +53,24 @@ const alertSchema = new Schema<IAlert>({
   },
   isRead: {
     type: Boolean,
-    default: false,
-    index: true
+    default: false
   },
   isAcknowledged: {
     type: Boolean,
-    default: false,
-    index: true
+    default: false
   },
   acknowledgedAt: {
     type: Date
   },
   createdAt: {
     type: Date,
-    default: Date.now,
-    index: true
+    default: Date.now
   },
   expiresAt: {
     type: Date
   }
 }, {
-  timestamps: true
+  timestamps: false // Disable automatic timestamps to avoid duplicate createdAt index
 });
 
 // Compound indexes for efficient queries

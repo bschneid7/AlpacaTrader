@@ -51,7 +51,7 @@ const UserSettingsSchema = new Schema<IUserSettings>(
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
-      unique: true,
+      unique: true, // unique: true already creates an index, no need for explicit index
     },
     accountDetails: {
       firstName: { type: String, trim: true },
@@ -91,8 +91,7 @@ const UserSettingsSchema = new Schema<IUserSettings>(
   }
 );
 
-// Index for quick user lookups
-UserSettingsSchema.index({ userId: 1 });
+// Note: No need for explicit userId index as unique: true already creates one
 
 const UserSettings = mongoose.model<IUserSettings>('UserSettings', UserSettingsSchema);
 

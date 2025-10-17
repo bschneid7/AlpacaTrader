@@ -27,13 +27,11 @@ const StrategySignalSchema = new Schema<IStrategySignal>(
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
-      index: true,
     },
     symbol: {
       type: String,
       required: true,
       uppercase: true,
-      index: true,
     },
     signalType: {
       type: String,
@@ -76,7 +74,6 @@ const StrategySignalSchema = new Schema<IStrategySignal>(
     executed: {
       type: Boolean,
       default: false,
-      index: true,
     },
     executedAt: {
       type: Date,
@@ -90,11 +87,10 @@ const StrategySignalSchema = new Schema<IStrategySignal>(
     createdAt: {
       type: Date,
       default: Date.now,
-      index: true,
     },
   },
   {
-    timestamps: true,
+    timestamps: false, // Disable automatic timestamps to avoid duplicate createdAt index
   }
 );
 

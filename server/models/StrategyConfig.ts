@@ -49,8 +49,7 @@ const strategyConfigSchema = new Schema<IStrategyConfig>(
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
-      unique: true,
-      index: true,
+      unique: true, // unique: true already creates an index, no need for explicit index
     },
     maxPositionSize: {
       type: Number,
