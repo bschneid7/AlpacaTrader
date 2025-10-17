@@ -8,11 +8,14 @@ import * as strategyService from './strategyService.js';
 import * as riskService from './riskService.js';
 import monitoringService from './monitoringService.js';
 import * as technicalIndicators from './technicalIndicators.js';
+import * as strategyEngine from './strategyEngine.js';
+import * as bracketOrderService from './bracketOrderService.js';
 import AlpacaAccount from '../models/AlpacaAccount.js';
 import Position from '../models/Position.js';
 import Order from '../models/Order.js';
 import TradingPreferences from '../models/TradingPreferences.js';
 import WatchlistStock from '../models/WatchlistStock.js';
+import StrategyConfig from '../models/StrategyConfig.js';
 import mongoose from 'mongoose';
 
 interface TradeSignal {
@@ -495,6 +498,60 @@ export async function executeSellOrder(userId: string, alpaca: any, signal: Trad
 }
 
 /**
+ * Execute EMA/ATR strategy with bracket orders
+ */
+export async function executeEMAATRStrategy(userId: string): Promise<void> {
+  try {
+    console.log(`[Trading Engine] Executing EMA/ATR bracket strategy for user ${userId}`);
+
+    // Run strategy analysis
+    const signals = await strategyEngine.runStrategyAnalysis(userId);
+
+    // Filter buy signals with valid position sizes
+    const executableSignals = signals.filter(
+      (s) => s.signalType === 'buy' && s.positionSize && s.positionSize > 0
+    );
+
+    console.log(`[Trading Engine] Found ${executableSignals.length} executable EMA/ATR signals`);
+
+    // Execute bracket orders for each signal
+    for (const signal of executableSignals) {
+      try {
+        if (!signal.stopLoss || !signal.takeProfit || !signal.positionSize) {
+          continue;
+        }
+
+        await bracketOrderService.submitBracketOrder(userId, {
+          symbol: signal.symbol,
+          quantity: signal.positionSize,
+          takeProfit: signal.takeProfit,
+          stopLoss: signal.stopLoss,
+          side: 'buy',
+          timeInForce: 'day',
+        });
+
+        // Mark signal as executed
+        const strategySignal = await strategyEngine.getUnexecutedSignals(userId);
+        const matchingSignal = strategySignal.find((s) => s.symbol === signal.symbol);
+        if (matchingSignal) {
+          await strategyEngine.markSignalExecuted(matchingSignal._id.toString(), 'pending');
+        }
+
+        // Small delay between orders
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      } catch (error: any) {
+        console.error(`[Trading Engine] Error executing bracket order for ${signal.symbol}:`, error);
+      }
+    }
+
+    console.log(`[Trading Engine] EMA/ATR strategy execution complete`);
+  } catch (error: any) {
+    console.error(`[Trading Engine] Error executing EMA/ATR strategy:`, error);
+    throw error;
+  }
+}
+
+/**
  * Process trading signals for a user
  */
 export async function processUserTrading(userId: string): Promise<void> {
@@ -517,24 +574,6 @@ export async function processUserTrading(userId: string): Promise<void> {
       return;
     }
 
-    // Decrypt credentials
-    const apiKey = alpacaAccount.decryptApiKey();
-    const secretKey = alpacaAccount.decryptSecretKey();
-
-    // Initialize Alpaca client
-    const alpaca = new Alpaca({
-      keyId: apiKey,
-      secretKey: secretKey,
-      paper: alpacaAccount.mode === 'paper'
-    });
-
-    // Check if market is open
-    const marketOpen = await isMarketOpen(alpaca);
-    if (!marketOpen) {
-      console.log(`[Trading Engine] Market is closed for user ${userId}`);
-      return;
-    }
-
     // Check risk limits
     const riskLimits = await riskService.getRiskLimits(userId);
     if (riskLimits.haltTrading) {
@@ -551,41 +590,72 @@ export async function processUserTrading(userId: string): Promise<void> {
       return;
     }
 
-    // Scan for sell signals first (manage existing positions)
-    const sellSignals = await scanForSellSignals(userId, alpaca);
-    for (const signal of sellSignals) {
-      try {
-        await executeSellOrder(userId, alpaca, signal);
+    // Get strategy config to determine which strategy to use
+    const config = await StrategyConfig.findOne({ userId });
+    const useEMAATRStrategy = config && config.tradingUniverse && config.tradingUniverse.length > 0;
 
-        // Small delay between orders
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      } catch (error) {
-        console.error(`[Trading Engine] Error executing sell order:`, error);
+    if (useEMAATRStrategy) {
+      // Use EMA/ATR bracket order strategy
+      console.log(`[Trading Engine] Using EMA/ATR bracket order strategy`);
+      await executeEMAATRStrategy(userId);
+    } else {
+      // Use traditional technical indicator strategy
+      console.log(`[Trading Engine] Using traditional technical indicator strategy`);
+
+      // Decrypt credentials
+      const apiKey = alpacaAccount.decryptApiKey();
+      const secretKey = alpacaAccount.decryptSecretKey();
+
+      // Initialize Alpaca client
+      const alpaca = new Alpaca({
+        keyId: apiKey,
+        secretKey: secretKey,
+        paper: alpacaAccount.mode === 'paper'
+      });
+
+      // Check if market is open
+      const marketOpen = await isMarketOpen(alpaca);
+      if (!marketOpen) {
+        console.log(`[Trading Engine] Market is closed for user ${userId}`);
+        return;
       }
-    }
 
-    // Scan for buy signals
-    const buySignals = await scanForBuySignals(userId, alpaca);
+      // Scan for sell signals first (manage existing positions)
+      const sellSignals = await scanForSellSignals(userId, alpaca);
+      for (const signal of sellSignals) {
+        try {
+          await executeSellOrder(userId, alpaca, signal);
 
-    // Sort by signal strength and take top signals
-    const sortedBuySignals = buySignals.sort((a, b) => b.strength - a.strength);
-    const maxNewPositions = 2; // Maximum new positions per cycle
-    const signalsToExecute = sortedBuySignals.slice(0, maxNewPositions);
+          // Small delay between orders
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (error) {
+          console.error(`[Trading Engine] Error executing sell order:`, error);
+        }
+      }
 
-    for (const signal of signalsToExecute) {
-      try {
-        await executeBuyOrder(userId, alpaca, signal);
+      // Scan for buy signals
+      const buySignals = await scanForBuySignals(userId, alpaca);
 
-        // Small delay between orders
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      } catch (error) {
-        console.error(`[Trading Engine] Error executing buy order:`, error);
+      // Sort by signal strength and take top signals
+      const sortedBuySignals = buySignals.sort((a, b) => b.strength - a.strength);
+      const maxNewPositions = 2; // Maximum new positions per cycle
+      const signalsToExecute = sortedBuySignals.slice(0, maxNewPositions);
+
+      for (const signal of signalsToExecute) {
+        try {
+          await executeBuyOrder(userId, alpaca, signal);
+
+          // Small delay between orders
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (error) {
+          console.error(`[Trading Engine] Error executing buy order:`, error);
+        }
       }
     }
 
     console.log(`[Trading Engine] Completed trading cycle for user ${userId}`);
     console.log(`[Trading Engine] ========================================\n`);
-  } catch (error) {
+  } catch (error: any) {
     console.error(`[Trading Engine] Error processing user trading for ${userId}:`, error);
 
     try {

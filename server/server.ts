@@ -5,6 +5,7 @@ import basicRoutes from './routes/index';
 import authRoutes from './routes/authRoutes';
 import alpacaRoutes from './routes/alpacaRoutes';
 import strategyRoutes from './routes/strategyRoutes';
+import strategyEngineRoutes from './routes/strategyEngineRoutes';
 import riskRoutes from './routes/riskRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
 import monitoringRoutes from './routes/monitoringRoutes';
@@ -50,6 +51,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/alpaca', alpacaRoutes);
 // Strategy Routes
 app.use('/api/strategy', strategyRoutes);
+// Strategy Engine Routes (EMA/ATR Bracket Orders)
+app.use('/api/strategy-engine', strategyEngineRoutes);
 // Risk Management Routes
 app.use('/api/risk', riskRoutes);
 // Analytics Routes
