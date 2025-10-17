@@ -5,6 +5,7 @@ import basicRoutes from './routes/index';
 import authRoutes from './routes/authRoutes';
 import alpacaRoutes from './routes/alpacaRoutes';
 import strategyRoutes from './routes/strategyRoutes';
+import riskRoutes from './routes/riskRoutes';
 import { connectDB } from './config/database';
 import cors from 'cors';
 
@@ -44,6 +45,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/alpaca', alpacaRoutes);
 // Strategy Routes
 app.use('/api/strategy', strategyRoutes);
+// Risk Management Routes
+app.use('/api/risk', riskRoutes);
 
 // If no routes handled the request, it's a 404
 app.use((req: Request, res: Response) => {

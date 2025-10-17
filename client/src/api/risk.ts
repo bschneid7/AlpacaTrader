@@ -3,106 +3,83 @@ import api from './api';
 // Description: Get Risk Metrics
 // Endpoint: GET /api/risk/metrics
 // Request: {}
-// Response: { currentRiskExposure: number, dailyLoss: number, dailyLossPercent: number, portfolioDrawdown: number, sectorConcentration: object, positionConcentration: object }
-export const getRiskMetrics = () => {
-  // Mocking the response
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        currentRiskExposure: 72,
-        dailyLoss: -234.56,
-        dailyLossPercent: -0.18,
-        portfolioDrawdown: 5.2,
-        sectorConcentration: {
-          Technology: 45,
-          Healthcare: 20,
-          Finance: 15,
-          Consumer: 12,
-          Energy: 8
-        },
-        positionConcentration: [
-          { symbol: 'MSFT', percentage: 11.77 },
-          { symbol: 'NVDA', percentage: 11.56 },
-          { symbol: 'AAPL', percentage: 7.15 },
-          { symbol: 'TSLA', percentage: 4.68 }
-        ]
-      });
-    }, 500);
-  });
-  // try {
-  //   return await api.get('/api/risk/metrics');
-  // } catch (error) {
-  //   throw new Error(error?.response?.data?.message || error.message);
-  // }
+// Response: { metrics: IRiskMetrics }
+export const getRiskMetrics = async () => {
+  try {
+    const response = await api.get('/api/risk/metrics');
+    return response.data;
+  } catch (error: any) {
+    console.error(error);
+    throw new Error(error?.response?.data?.error || error.message);
+  }
+};
+
+// Description: Calculate fresh Risk Metrics
+// Endpoint: POST /api/risk/metrics/calculate
+// Request: {}
+// Response: { metrics: IRiskMetrics }
+export const calculateRiskMetrics = async () => {
+  try {
+    const response = await api.post('/api/risk/metrics/calculate');
+    return response.data;
+  } catch (error: any) {
+    console.error(error);
+    throw new Error(error?.response?.data?.error || error.message);
+  }
 };
 
 // Description: Get Risk Limits
 // Endpoint: GET /api/risk/limits
 // Request: {}
-// Response: { dailyLossLimit: number, dailyLossLimitPercent: number, haltOnLimit: boolean, drawdownLimit: number }
-export const getRiskLimits = () => {
-  // Mocking the response
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        dailyLossLimit: 2000,
-        dailyLossLimitPercent: 1.5,
-        haltOnLimit: true,
-        drawdownLimit: 15
-      });
-    }, 500);
-  });
-  // try {
-  //   return await api.get('/api/risk/limits');
-  // } catch (error) {
-  //   throw new Error(error?.response?.data?.message || error.message);
-  // }
+// Response: { limits: IRiskLimits }
+export const getRiskLimits = async () => {
+  try {
+    const response = await api.get('/api/risk/limits');
+    return response.data;
+  } catch (error: any) {
+    console.error(error);
+    throw new Error(error?.response?.data?.error || error.message);
+  }
 };
 
 // Description: Update Risk Limits
 // Endpoint: PUT /api/risk/limits
-// Request: { dailyLossLimit: number, dailyLossLimitPercent: number, haltOnLimit: boolean, drawdownLimit: number }
-// Response: { success: boolean, message: string }
-export const updateRiskLimits = (data: {
-  dailyLossLimit: number;
-  dailyLossLimitPercent: number;
-  haltOnLimit: boolean;
-  drawdownLimit: number;
-}) => {
-  // Mocking the response
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        success: true,
-        message: 'Risk limits updated successfully'
-      });
-    }, 500);
-  });
-  // try {
-  //   return await api.put('/api/risk/limits', data);
-  // } catch (error) {
-  //   throw new Error(error?.response?.data?.message || error.message);
-  // }
+// Request: { dailyLossLimit?, portfolioDrawdownLimit?, positionLossThreshold?, dailyLossThreshold?, drawdownThreshold?, volatilityThreshold?, haltTradingOnDailyLimit?, haltTradingOnDrawdown? }
+// Response: { limits: IRiskLimits, message: string }
+export const updateRiskLimits = async (data: any) => {
+  try {
+    const response = await api.put('/api/risk/limits', data);
+    return response.data;
+  } catch (error: any) {
+    console.error(error);
+    throw new Error(error?.response?.data?.error || error.message);
+  }
 };
 
 // Description: Emergency Stop All Positions
 // Endpoint: POST /api/risk/emergency-stop
 // Request: { confirmation: string }
 // Response: { success: boolean, message: string, closedPositions: number }
-export const emergencyStopAll = (confirmation: string) => {
-  // Mocking the response
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        success: true,
-        message: 'All positions closed and trading halted',
-        closedPositions: 4
-      });
-    }, 1500);
-  });
-  // try {
-  //   return await api.post('/api/risk/emergency-stop', { confirmation });
-  // } catch (error) {
-  //   throw new Error(error?.response?.data?.message || error.message);
-  // }
+export const emergencyStopAll = async (confirmation: string) => {
+  try {
+    const response = await api.post('/api/risk/emergency-stop', { confirmation });
+    return response.data;
+  } catch (error: any) {
+    console.error(error);
+    throw new Error(error?.response?.data?.error || error.message);
+  }
+};
+
+// Description: Check if risk limits are breached
+// Endpoint: GET /api/risk/check-breaches
+// Request: {}
+// Response: { breached: boolean, breaches: string[], shouldHaltTrading: boolean }
+export const checkRiskBreaches = async () => {
+  try {
+    const response = await api.get('/api/risk/check-breaches');
+    return response.data;
+  } catch (error: any) {
+    console.error(error);
+    throw new Error(error?.response?.data?.error || error.message);
+  }
 };

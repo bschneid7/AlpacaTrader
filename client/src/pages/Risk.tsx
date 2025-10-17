@@ -21,15 +21,14 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import type { RiskMetrics, RiskLimits } from '@/types/risk';
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'];
 
 export function Risk() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [metrics, setMetrics] = useState<RiskMetrics | null>(null);
-  const [limits, setLimits] = useState<RiskLimits | null>(null);
+  const [metrics, setMetrics] = useState<any>(null);
+  const [limits, setLimits] = useState<any>(null);
   const [showEmergencyDialog, setShowEmergencyDialog] = useState(false);
   const [confirmText, setConfirmText] = useState('');
   const [emergencyStopping, setEmergencyStopping] = useState(false);
@@ -42,9 +41,10 @@ export function Risk() {
         getRiskLimits(),
       ]);
 
-      setMetrics(metricsRes as RiskMetrics);
-      setLimits(limitsRes as RiskLimits);
+      setMetrics(metricsRes.metrics);
+      setLimits(limitsRes.limits);
     } catch (error) {
+      console.error("Risk data fetch error:", error);
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to fetch risk data',
@@ -62,17 +62,19 @@ export function Risk() {
 
   const handleSaveLimits = async () => {
     if (!limits) return;
-    
+
     setSaving(true);
     try {
-      const response = await updateRiskLimits(limits) as { success: boolean; message: string };
-      if (response.success) {
-        toast({
-          title: 'Success',
-          description: response.message,
-        });
-      }
+      const response = await updateRiskLimits(limits);
+      toast({
+        title: 'Success',
+        description: response.message || 'Risk limits updated successfully',
+      });
+      // Refresh limits
+      const limitsRes = await getRiskLimits();
+      setLimits(limitsRes.limits);
     } catch (error) {
+      console.error("Update risk limits error:", error);
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to update risk limits',
@@ -95,7 +97,7 @@ export function Risk() {
 
     setEmergencyStopping(true);
     try {
-      const response = await emergencyStopAll(confirmText) as { success: boolean; message: string; closedPositions: number };
+      const response = await emergencyStopAll(confirmText);
       if (response.success) {
         toast({
           title: 'Emergency Stop Executed',
@@ -103,8 +105,11 @@ export function Risk() {
         });
         setShowEmergencyDialog(false);
         setConfirmText('');
+        // Refresh data
+        fetchData();
       }
     } catch (error) {
+      console.error("Emergency stop error:", error);
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to execute emergency stop',
@@ -124,12 +129,13 @@ export function Risk() {
     );
   }
 
-  const sectorData = Object.entries(metrics.sectorConcentration).map(([name, value]) => ({
-    name,
-    value,
-  }));
+  // Transform sector concentration data
+  const sectorData = metrics.sectorConcentration?.map((sector: any) => ({
+    name: sector.sector,
+    value: sector.percentage,
+  })) || [];
 
-  const positionData = metrics.positionConcentration;
+  const positionData = metrics.positionConcentration || [];
 
   return (
     <>
@@ -157,23 +163,23 @@ export function Risk() {
               <Shield className="h-4 w-4 text-orange-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-600">{metrics.currentRiskExposure}%</div>
-              <Progress value={metrics.currentRiskExposure} className="mt-2 h-2" />
+              <div className="text-2xl font-bold text-orange-600">{metrics.currentRiskExposure?.toFixed(2) || 0}%</div>
+              <Progress value={metrics.currentRiskExposure || 0} className="mt-2 h-2" />
               <p className="text-xs text-muted-foreground mt-1">Portfolio at risk</p>
             </CardContent>
           </Card>
 
           <Card className="bg-card/50 backdrop-blur-sm border-border/50">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Daily Loss</CardTitle>
-              <AlertTriangle className={`h-4 w-4 ${metrics.dailyLoss < 0 ? 'text-red-600' : 'text-green-600'}`} />
+              <CardTitle className="text-sm font-medium">Daily P&L</CardTitle>
+              <AlertTriangle className={`h-4 w-4 ${metrics.dailyPnL < 0 ? 'text-red-600' : 'text-green-600'}`} />
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${metrics.dailyLoss < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                ${Math.abs(metrics.dailyLoss).toFixed(2)}
+              <div className={`text-2xl font-bold ${metrics.dailyPnL < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                ${Math.abs(metrics.dailyPnL || 0).toFixed(2)}
               </div>
-              <p className={`text-xs ${metrics.dailyLoss < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                {metrics.dailyLossPercent.toFixed(2)}%
+              <p className={`text-xs ${metrics.dailyPnL < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                {(metrics.dailyPnLPercentage || 0).toFixed(2)}%
               </p>
             </CardContent>
           </Card>
@@ -184,7 +190,7 @@ export function Risk() {
               <AlertTriangle className="h-4 w-4 text-yellow-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{metrics.portfolioDrawdown.toFixed(2)}%</div>
+              <div className="text-2xl font-bold text-yellow-600">{(metrics.currentDrawdown || 0).toFixed(2)}%</div>
               <p className="text-xs text-muted-foreground">From peak value</p>
             </CardContent>
           </Card>
@@ -197,25 +203,31 @@ export function Risk() {
               <CardDescription>Portfolio allocation by sector</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={sectorData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, value }) => `${name}: ${value}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {sectorData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+              {sectorData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={sectorData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, value }) => `${name}: ${value.toFixed(1)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {sectorData.map((entry: any, index: number) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                  No sector data available
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -225,21 +237,27 @@ export function Risk() {
               <CardDescription>Largest positions by portfolio percentage</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={positionData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="symbol" className="text-xs" />
-                  <YAxis className="text-xs" />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px',
-                    }}
-                  />
-                  <Bar dataKey="percentage" fill="#3b82f6" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              {positionData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={positionData}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="symbol" className="text-xs" />
+                    <YAxis className="text-xs" />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                      }}
+                    />
+                    <Bar dataKey="percentage" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                  No position data available
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -252,56 +270,79 @@ export function Risk() {
           <CardContent className="space-y-6">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>Daily Loss Limit ($)</Label>
-                <span className="text-sm font-semibold">${limits.dailyLossLimit}</span>
-              </div>
-              <Slider
-                value={[limits.dailyLossLimit]}
-                onValueChange={([value]) => setLimits({ ...limits, dailyLossLimit: value })}
-                min={500}
-                max={5000}
-                step={100}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
                 <Label>Daily Loss Limit (%)</Label>
-                <span className="text-sm font-semibold">{limits.dailyLossLimitPercent}%</span>
+                <span className="text-sm font-semibold">{limits.dailyLossLimit?.value || 0}%</span>
               </div>
               <Slider
-                value={[limits.dailyLossLimitPercent]}
-                onValueChange={([value]) => setLimits({ ...limits, dailyLossLimitPercent: value })}
-                min={0.5}
-                max={5}
-                step={0.1}
+                value={[limits.dailyLossLimit?.value || 5]}
+                onValueChange={([value]) => setLimits({
+                  ...limits,
+                  dailyLossLimit: { ...limits.dailyLossLimit, value }
+                })}
+                min={1}
+                max={20}
+                step={0.5}
               />
+              <div className="flex items-center justify-between mt-2">
+                <Label className="text-xs text-muted-foreground">Enable Daily Loss Limit</Label>
+                <Switch
+                  checked={limits.dailyLossLimit?.enabled || false}
+                  onCheckedChange={(checked) => setLimits({
+                    ...limits,
+                    dailyLossLimit: { ...limits.dailyLossLimit, enabled: checked }
+                  })}
+                />
+              </div>
             </div>
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>Halt Trading on Limit</Label>
+                <Label>Halt Trading on Daily Limit</Label>
                 <p className="text-xs text-muted-foreground">Automatically stop trading if daily loss limit is reached</p>
               </div>
               <Switch
-                checked={limits.haltOnLimit}
-                onCheckedChange={(checked) => setLimits({ ...limits, haltOnLimit: checked })}
+                checked={limits.haltTradingOnDailyLimit || false}
+                onCheckedChange={(checked) => setLimits({ ...limits, haltTradingOnDailyLimit: checked })}
               />
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>Portfolio Drawdown Limit (%)</Label>
-                <span className="text-sm font-semibold">{limits.drawdownLimit}%</span>
+                <span className="text-sm font-semibold">{limits.portfolioDrawdownLimit?.value || 0}%</span>
               </div>
               <Slider
-                value={[limits.drawdownLimit]}
-                onValueChange={([value]) => setLimits({ ...limits, drawdownLimit: value })}
+                value={[limits.portfolioDrawdownLimit?.value || 15]}
+                onValueChange={([value]) => setLimits({
+                  ...limits,
+                  portfolioDrawdownLimit: { ...limits.portfolioDrawdownLimit, value }
+                })}
                 min={5}
                 max={30}
                 step={1}
               />
+              <div className="flex items-center justify-between mt-2">
+                <Label className="text-xs text-muted-foreground">Enable Drawdown Limit</Label>
+                <Switch
+                  checked={limits.portfolioDrawdownLimit?.enabled || false}
+                  onCheckedChange={(checked) => setLimits({
+                    ...limits,
+                    portfolioDrawdownLimit: { ...limits.portfolioDrawdownLimit, enabled: checked }
+                  })}
+                />
+              </div>
               <p className="text-xs text-muted-foreground">Auto-pause trading if drawdown exceeds this threshold</p>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Halt Trading on Drawdown</Label>
+                <p className="text-xs text-muted-foreground">Automatically stop trading if drawdown limit is reached</p>
+              </div>
+              <Switch
+                checked={limits.haltTradingOnDrawdown || false}
+                onCheckedChange={(checked) => setLimits({ ...limits, haltTradingOnDrawdown: checked })}
+              />
             </div>
 
             <Button onClick={handleSaveLimits} disabled={saving} className="w-full">
