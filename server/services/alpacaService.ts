@@ -1,5 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import AlpacaAccount, { IAlpacaAccount } from '../models/AlpacaAccount';
+import Position from '../models/Position';
 import mongoose from 'mongoose';
 
 interface AlpacaAccountInfo {
@@ -207,7 +208,7 @@ class AlpacaService {
   }
 
   /**
-   * Get current positions from Alpaca API
+   * Get current positions from Alpaca API and sync with database
    */
   async getPositions(userId: string): Promise<Array<{
     symbol: string;
@@ -241,7 +242,10 @@ class AlpacaService {
       const accountResponse = await client.get<AlpacaAccountInfo>('/v2/account');
       const portfolioValue = parseFloat(accountResponse.data.portfolio_value);
 
-      console.log(`Found ${positions.length} positions`);
+      console.log(`Found ${positions.length} positions from Alpaca API`);
+
+      // Sync positions with database
+      await this.syncPositionsToDatabase(userId, alpacaAccount._id.toString(), positions, portfolioValue);
 
       return positions.map(position => {
         const marketValue = parseFloat(position.market_value);
@@ -263,6 +267,155 @@ class AlpacaService {
         throw error;
       }
       throw new Error('Failed to fetch positions');
+    }
+  }
+
+  /**
+   * Sync positions from Alpaca to database
+   */
+  private async syncPositionsToDatabase(
+    userId: string,
+    alpacaAccountId: string,
+    alpacaPositions: AlpacaPosition[],
+    portfolioValue: number
+  ): Promise<void> {
+    try {
+      console.log(`Syncing ${alpacaPositions.length} positions to database`);
+
+      const userObjectId = new mongoose.Types.ObjectId(userId);
+      const accountObjectId = new mongoose.Types.ObjectId(alpacaAccountId);
+
+      // Get current symbols from Alpaca
+      const alpacaSymbols = alpacaPositions.map(p => p.symbol);
+
+      // Mark positions as closed if they no longer exist in Alpaca
+      await Position.updateMany(
+        {
+          userId: userObjectId,
+          alpacaAccountId: accountObjectId,
+          status: 'open',
+          symbol: { $nin: alpacaSymbols }
+        },
+        {
+          status: 'closed',
+          closedAt: new Date()
+        }
+      );
+
+      // Update or create positions
+      for (const alpacaPosition of alpacaPositions) {
+        const positionData = {
+          userId: userObjectId,
+          alpacaAccountId: accountObjectId,
+          symbol: alpacaPosition.symbol,
+          quantity: parseFloat(alpacaPosition.qty),
+          entryPrice: parseFloat(alpacaPosition.avg_entry_price),
+          currentPrice: parseFloat(alpacaPosition.current_price),
+          marketValue: parseFloat(alpacaPosition.market_value),
+          costBasis: parseFloat(alpacaPosition.cost_basis),
+          unrealizedPL: parseFloat(alpacaPosition.unrealized_pl),
+          unrealizedPLPercent: parseFloat(alpacaPosition.unrealized_plpc) * 100,
+          side: alpacaPosition.side as 'long' | 'short',
+          exchange: alpacaPosition.exchange,
+          assetId: alpacaPosition.asset_id,
+          avgEntryPrice: parseFloat(alpacaPosition.avg_entry_price),
+          status: 'open' as const,
+          lastUpdated: new Date()
+        };
+
+        await Position.findOneAndUpdate(
+          {
+            userId: userObjectId,
+            alpacaAccountId: accountObjectId,
+            symbol: alpacaPosition.symbol,
+            status: 'open'
+          },
+          {
+            ...positionData,
+            openedAt: new Date() // This will only be set on creation
+          },
+          {
+            upsert: true,
+            setDefaultsOnInsert: true,
+            new: true
+          }
+        );
+      }
+
+      console.log('Positions synced to database successfully');
+    } catch (error: unknown) {
+      console.error('Error syncing positions to database:', error);
+      // Don't throw - we still want to return the positions even if sync fails
+    }
+  }
+
+  /**
+   * Close a specific position
+   */
+  async closePosition(userId: string, symbol: string): Promise<{
+    success: boolean;
+    message: string;
+    orderId?: string;
+  }> {
+    try {
+      console.log(`Closing position ${symbol} for user: ${userId}`);
+
+      const alpacaAccount = await AlpacaAccount.findOne({
+        userId: new mongoose.Types.ObjectId(userId),
+        isConnected: true
+      });
+
+      if (!alpacaAccount) {
+        throw new Error('Alpaca account not connected');
+      }
+
+      const apiKey = alpacaAccount.getDecryptedApiKey();
+      const secretKey = alpacaAccount.getDecryptedSecretKey();
+      const client = this.getAlpacaClient(apiKey, secretKey, alpacaAccount.isPaperTrading);
+
+      // Close the position using DELETE /v2/positions/{symbol}
+      const response = await client.delete(`/v2/positions/${symbol}`);
+
+      console.log(`Position ${symbol} closed successfully via Alpaca API`);
+
+      // Update position in database
+      const position = await Position.findOne({
+        userId: new mongoose.Types.ObjectId(userId),
+        symbol,
+        status: 'open'
+      });
+
+      if (position) {
+        position.status = 'closed';
+        position.closedAt = new Date();
+        position.closePrice = position.currentPrice;
+        position.realizedPL = position.unrealizedPL;
+        await position.save();
+        console.log(`Position ${symbol} marked as closed in database`);
+      }
+
+      return {
+        success: true,
+        message: `Position ${symbol} closed successfully`,
+        orderId: response.data?.id
+      };
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error(`Error closing position ${symbol}:`, error.response?.data || error.message);
+
+        if (error.response?.status === 404) {
+          throw new Error(`Position ${symbol} not found`);
+        }
+
+        throw new Error(error.response?.data?.message || `Failed to close position ${symbol}`);
+      }
+
+      if (error instanceof Error) {
+        console.error(`Error closing position ${symbol}:`, error.message);
+        throw error;
+      }
+
+      throw new Error(`Failed to close position ${symbol}`);
     }
   }
 

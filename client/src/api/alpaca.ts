@@ -8,9 +8,10 @@ export const connectAlpacaAccount = async (data: { apiKey: string; secretKey: st
   try {
     const response = await api.post('/api/alpaca/connect', data);
     return response.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(error);
-    throw new Error(error?.response?.data?.error || error.message);
+    const err = error as { response?: { data?: { error?: string } }; message?: string };
+    throw new Error(err?.response?.data?.error || err.message || 'Unknown error');
   }
 };
 
@@ -22,9 +23,10 @@ export const getAccountOverview = async () => {
   try {
     const response = await api.get('/api/alpaca/account');
     return response.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(error);
-    throw new Error(error?.response?.data?.error || error.message);
+    const err = error as { response?: { data?: { error?: string } }; message?: string };
+    throw new Error(err?.response?.data?.error || err.message || 'Unknown error');
   }
 };
 
@@ -36,9 +38,10 @@ export const getCurrentPositions = async () => {
   try {
     const response = await api.get('/api/alpaca/positions');
     return response.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(error);
-    throw new Error(error?.response?.data?.error || error.message);
+    const err = error as { response?: { data?: { error?: string } }; message?: string };
+    throw new Error(err?.response?.data?.error || err.message || 'Unknown error');
   }
 };
 
@@ -50,9 +53,10 @@ export const disconnectAlpacaAccount = async () => {
   try {
     const response = await api.delete('/api/alpaca/disconnect');
     return response.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(error);
-    throw new Error(error?.response?.data?.error || error.message);
+    const err = error as { response?: { data?: { error?: string } }; message?: string };
+    throw new Error(err?.response?.data?.error || err.message || 'Unknown error');
   }
 };
 
@@ -64,34 +68,26 @@ export const getAccountStatus = async () => {
   try {
     const response = await api.get('/api/alpaca/status');
     return response.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(error);
-    throw new Error(error?.response?.data?.error || error.message);
+    const err = error as { response?: { data?: { error?: string } }; message?: string };
+    throw new Error(err?.response?.data?.error || err.message || 'Unknown error');
   }
 };
 
 // Description: Close Position
-// Endpoint: POST /api/alpaca/positions/close
+// Endpoint: POST /api/alpaca/positions/:symbol/close
 // Request: { symbol: string }
-// Response: { success: boolean, message: string, orderId: string }
-export const closePosition = (data: { symbol: string }) => {
-  // Mocking the response - This will be implemented in a future task
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        success: true,
-        message: `Position ${data.symbol} closed successfully`,
-        orderId: `ORD${Math.random().toString(36).substr(2, 9).toUpperCase()}`
-      });
-    }, 800);
-  });
-  // try {
-  //   const response = await api.post('/api/alpaca/positions/close', data);
-  //   return response.data;
-  // } catch (error: any) {
-  //   console.error(error);
-  //   throw new Error(error?.response?.data?.error || error.message);
-  // }
+// Response: { success: boolean, message: string, orderId?: string }
+export const closePosition = async (data: { symbol: string }) => {
+  try {
+    const response = await api.post(`/api/alpaca/positions/${data.symbol}/close`);
+    return response.data;
+  } catch (error: unknown) {
+    console.error(error);
+    const err = error as { response?: { data?: { error?: string } }; message?: string };
+    throw new Error(err?.response?.data?.error || err.message || 'Unknown error');
+  }
 };
 
 // Description: Get Recent Trades
@@ -133,9 +129,10 @@ export const toggleAutoTrading = async (data: { enabled: boolean }) => {
   try {
     const response = await api.post('/api/alpaca/auto-trading/toggle', data);
     return response.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(error);
-    throw new Error(error?.response?.data?.error || error.message);
+    const err = error as { response?: { data?: { error?: string } }; message?: string };
+    throw new Error(err?.response?.data?.error || err.message || 'Unknown error');
   }
 };
 
@@ -147,9 +144,10 @@ export const getAutoTradingStatus = async () => {
   try {
     const response = await api.get('/api/alpaca/auto-trading/status');
     return response.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(error);
-    throw new Error(error?.response?.data?.error || error.message);
+    const err = error as { response?: { data?: { error?: string } }; message?: string };
+    throw new Error(err?.response?.data?.error || err.message || 'Unknown error');
   }
 };
 

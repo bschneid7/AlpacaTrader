@@ -11,7 +11,9 @@
     "build": "npm run build:shared && tsc",
     "build:shared": "cd ../shared && npm run build",
     "lint": "eslint . --format json",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:alpaca": "tsx scripts/testAlpaca.ts",
+    "test:positions": "tsx scripts/testPositions.ts"
   },
   "keywords": [],
   "author": "",

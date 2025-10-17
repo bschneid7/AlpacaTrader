@@ -231,4 +231,36 @@ router.get('/auto-trading/status', requireUser(), async (req: AuthRequest, res: 
   }
 });
 
+// Description: Close Position
+// Endpoint: POST /api/alpaca/positions/:symbol/close
+// Request: { symbol: string (in URL params) }
+// Response: { success: boolean, message: string, orderId?: string }
+router.post('/positions/:symbol/close', requireUser(), async (req: AuthRequest, res: Response) => {
+  try {
+    const { symbol } = req.params;
+
+    if (!symbol) {
+      return res.status(400).json({ error: 'Symbol is required' });
+    }
+
+    if (!req.user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    console.log(`Closing position ${symbol} for user: ${req.user.email}`);
+
+    const result = await AlpacaService.closePosition(req.user._id, symbol);
+
+    res.status(200).json(result);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error(`Error closing position: ${error.message}`);
+      res.status(400).json({ error: error.message });
+    } else {
+      console.error('Unknown error closing position');
+      res.status(500).json({ error: 'Failed to close position' });
+    }
+  }
+});
+
 export default router;
