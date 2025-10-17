@@ -72,10 +72,20 @@ router.get('/account', requireUser(), async (req: AuthRequest, res: Response) =>
     res.status(200).json(accountOverview);
   } catch (error: unknown) {
     if (error instanceof Error) {
-      // Only log if it's NOT the expected "account not connected" error
-      if (error.message !== 'Alpaca account not connected') {
-        console.error(`Error fetching account overview: ${error.message}`);
+      // If account is not connected, return default/empty values instead of error
+      if (error.message === 'Alpaca account not connected') {
+        return res.status(200).json({
+          portfolioValue: 0,
+          todayPL: 0,
+          todayPLPercent: 0,
+          cashAvailable: 0,
+          buyingPower: 0,
+          accountNumber: '',
+          accountType: '',
+          isConnected: false
+        });
       }
+      console.error(`Error fetching account overview: ${error.message}`);
       res.status(400).json({ error: error.message });
     } else {
       console.error('Unknown error fetching account overview');
@@ -101,10 +111,22 @@ router.get('/portfolio', requireUser(), async (req: AuthRequest, res: Response) 
     res.status(200).json(portfolio);
   } catch (error: unknown) {
     if (error instanceof Error) {
-      // Only log if it's NOT the expected "account not connected" error
-      if (error.message !== 'Alpaca account not connected') {
-        console.error(`Error fetching portfolio value: ${error.message}`);
+      // If account is not connected, return default/empty values instead of error
+      if (error.message === 'Alpaca account not connected') {
+        return res.status(200).json({
+          totalValue: 0,
+          equity: 0,
+          cash: 0,
+          buyingPower: 0,
+          dayPL: 0,
+          dayPLPercent: 0,
+          unrealizedPL: 0,
+          unrealizedPLPercent: 0,
+          lastUpdated: new Date().toISOString(),
+          isConnected: false
+        });
       }
+      console.error(`Error fetching portfolio value: ${error.message}`);
       res.status(400).json({ error: error.message });
     } else {
       console.error('Unknown error fetching portfolio value');
@@ -130,10 +152,14 @@ router.get('/positions', requireUser(), async (req: AuthRequest, res: Response) 
     res.status(200).json({ positions });
   } catch (error: unknown) {
     if (error instanceof Error) {
-      // Only log if it's NOT the expected "account not connected" error
-      if (error.message !== 'Alpaca account not connected') {
-        console.error(`Error fetching positions: ${error.message}`);
+      // If account is not connected, return empty positions array instead of error
+      if (error.message === 'Alpaca account not connected') {
+        return res.status(200).json({
+          positions: [],
+          isConnected: false
+        });
       }
+      console.error(`Error fetching positions: ${error.message}`);
       res.status(400).json({ error: error.message });
     } else {
       console.error('Unknown error fetching positions');
