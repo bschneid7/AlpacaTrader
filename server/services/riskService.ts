@@ -100,8 +100,28 @@ class RiskService {
 
       // Get user's Alpaca account
       const alpacaAccount = await AlpacaAccount.findOne({ userId });
-      if (!alpacaAccount) {
-        throw new Error('Alpaca account not found');
+      if (!alpacaAccount || !alpacaAccount.isConnected) {
+        console.log(`[RiskService] No connected Alpaca account found, returning default metrics`);
+
+        // Return default/zero metrics for users without connected accounts
+        const defaultMetrics = await RiskMetrics.create({
+          userId,
+          currentRiskExposure: 0,
+          portfolioValue: 0,
+          cashAvailable: 0,
+          dailyPnL: 0,
+          dailyPnLPercentage: 0,
+          peakPortfolioValue: 0,
+          currentDrawdown: 0,
+          maxDrawdown: 0,
+          sectorConcentration: [],
+          positionConcentration: [],
+          correlationMatrix: {},
+          volatilityIndex: 0,
+          calculatedAt: new Date()
+        });
+
+        return defaultMetrics;
       }
 
       // Get current positions

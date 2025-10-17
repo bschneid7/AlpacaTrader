@@ -137,6 +137,9 @@ export function Risk() {
 
   const positionData = metrics.positionConcentration || [];
 
+  // Check if user has no Alpaca account or portfolio value
+  const hasNoAccount = metrics.portfolioValue === 0 && metrics.cashAvailable === 0;
+
   return (
     <>
       <div className="space-y-6">
@@ -150,11 +153,28 @@ export function Risk() {
             size="lg"
             onClick={() => setShowEmergencyDialog(true)}
             className="bg-red-600 hover:bg-red-700"
+            disabled={hasNoAccount}
           >
             <AlertOctagon className="mr-2 h-5 w-5" />
             EMERGENCY STOP
           </Button>
         </div>
+
+        {hasNoAccount && (
+          <Card className="bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-yellow-900 dark:text-yellow-100">No Alpaca Account Connected</h3>
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200 mt-1">
+                    Connect your Alpaca trading account in the Settings page to view real-time risk metrics and portfolio data.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid gap-4 md:grid-cols-3">
           <Card className="bg-card/50 backdrop-blur-sm border-border/50">
