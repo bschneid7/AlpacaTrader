@@ -160,14 +160,13 @@ class AlpacaService {
     accountType: string;
   }> {
     try {
-      console.log(`Fetching account overview for user: ${userId}`);
-
       const alpacaAccount = await AlpacaAccount.findOne({
         userId: new mongoose.Types.ObjectId(userId),
         isConnected: true
       });
 
       if (!alpacaAccount) {
+        // Don't log this as an error - it's an expected state for new users
         throw new Error('Alpaca account not connected');
       }
 
@@ -188,8 +187,6 @@ class AlpacaService {
       alpacaAccount.lastSyncedAt = new Date();
       await alpacaAccount.save();
 
-      console.log('Account overview fetched successfully');
-
       return {
         portfolioValue,
         todayPL,
@@ -201,7 +198,10 @@ class AlpacaService {
       };
     } catch (error: unknown) {
       if (error instanceof Error) {
-        console.error('Error fetching account overview:', error.message);
+        // Only log if it's NOT the expected "account not connected" error
+        if (error.message !== 'Alpaca account not connected') {
+          console.error('Error fetching account overview:', error.message);
+        }
         throw error;
       }
       throw new Error('Failed to fetch account overview');
@@ -221,14 +221,13 @@ class AlpacaService {
     positionSize: number;
   }>> {
     try {
-      console.log(`Fetching positions for user: ${userId}`);
-
       const alpacaAccount = await AlpacaAccount.findOne({
         userId: new mongoose.Types.ObjectId(userId),
         isConnected: true
       });
 
       if (!alpacaAccount) {
+        // Don't log this as an error - it's an expected state for new users
         throw new Error('Alpaca account not connected');
       }
 
@@ -242,8 +241,6 @@ class AlpacaService {
       // Get account info to calculate position size percentage
       const accountResponse = await client.get<AlpacaAccountInfo>('/v2/account');
       const portfolioValue = parseFloat(accountResponse.data.portfolio_value);
-
-      console.log(`Found ${positions.length} positions from Alpaca API`);
 
       // Sync positions with database
       await this.syncPositionsToDatabase(userId, alpacaAccount._id.toString(), positions, portfolioValue);
@@ -264,7 +261,10 @@ class AlpacaService {
       });
     } catch (error: unknown) {
       if (error instanceof Error) {
-        console.error('Error fetching positions:', error.message);
+        // Only log if it's NOT the expected "account not connected" error
+        if (error.message !== 'Alpaca account not connected') {
+          console.error('Error fetching positions:', error.message);
+        }
         throw error;
       }
       throw new Error('Failed to fetch positions');
@@ -281,8 +281,6 @@ class AlpacaService {
     portfolioValue: number
   ): Promise<void> {
     try {
-      console.log(`Syncing ${alpacaPositions.length} positions to database`);
-
       const userObjectId = new mongoose.Types.ObjectId(userId);
       const accountObjectId = new mongoose.Types.ObjectId(alpacaAccountId);
 
@@ -342,8 +340,6 @@ class AlpacaService {
           }
         );
       }
-
-      console.log('Positions synced to database successfully');
     } catch (error: unknown) {
       console.error('Error syncing positions to database:', error);
       // Don't throw - we still want to return the positions even if sync fails
@@ -532,8 +528,6 @@ class AlpacaService {
     isAccountConnected: boolean;
   }> {
     try {
-      console.log(`Fetching auto-trading status for user ${userId}`);
-
       // Check if Alpaca account is connected
       const alpacaAccount = await AlpacaAccount.findOne({
         userId: new mongoose.Types.ObjectId(userId),
@@ -543,7 +537,7 @@ class AlpacaService {
       const isAccountConnected = !!alpacaAccount;
 
       if (!isAccountConnected) {
-        console.log(`Alpaca account not connected for user ${userId}`);
+        // Don't log - expected state for users without Alpaca account
         return {
           enabled: false,
           status: 'stopped',
@@ -558,7 +552,7 @@ class AlpacaService {
       });
 
       if (!tradingPrefs) {
-        console.log(`No trading preferences found for user ${userId}, returning defaults`);
+        // Don't log - expected state for new accounts
         return {
           enabled: false,
           status: 'stopped',
@@ -566,8 +560,6 @@ class AlpacaService {
           isAccountConnected: true
         };
       }
-
-      console.log(`Auto-trading status retrieved successfully for user ${userId}`);
 
       return {
         enabled: tradingPrefs.autoTradingEnabled,
