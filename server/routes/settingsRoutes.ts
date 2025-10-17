@@ -8,7 +8,7 @@ const router = express.Router();
 // Endpoint: GET /api/settings
 // Request: {}
 // Response: { accountNumber: string, accountType: string, accountStatus: string, emailNotifications: boolean, email: string, alertFrequency: string }
-router.get('/', requireUser, async (req, res) => {
+router.get('/', requireUser(), async (req, res) => {
   console.log(`[SettingsRoutes] GET /api/settings - User: ${req.user._id}`);
 
   try {
@@ -38,7 +38,7 @@ router.get('/', requireUser, async (req, res) => {
 // Endpoint: PUT /api/settings/notifications
 // Request: { emailNotifications: boolean, emailAddress?: string, alertFrequency?: string, ... }
 // Response: { settings: object, message: string }
-router.put('/notifications', requireUser, async (req, res) => {
+router.put('/notifications', requireUser(), async (req, res) => {
   console.log(`[SettingsRoutes] PUT /api/settings/notifications - User: ${req.user._id}`);
 
   try {
@@ -66,7 +66,7 @@ router.put('/notifications', requireUser, async (req, res) => {
 // Endpoint: PUT /api/settings/account
 // Request: { firstName?: string, lastName?: string, phone?: string, timezone?: string, language?: string }
 // Response: { settings: object, message: string }
-router.put('/account', requireUser, async (req, res) => {
+router.put('/account', requireUser(), async (req, res) => {
   console.log(`[SettingsRoutes] PUT /api/settings/account - User: ${req.user._id}`);
 
   try {
@@ -94,7 +94,7 @@ router.put('/account', requireUser, async (req, res) => {
 // Endpoint: PUT /api/settings/display
 // Request: { currencyFormat?: string, dateFormat?: string, timeFormat?: string, dashboardRefreshRate?: number }
 // Response: { settings: object, message: string }
-router.put('/display', requireUser, async (req, res) => {
+router.put('/display', requireUser(), async (req, res) => {
   console.log(`[SettingsRoutes] PUT /api/settings/display - User: ${req.user._id}`);
 
   try {
@@ -122,7 +122,7 @@ router.put('/display', requireUser, async (req, res) => {
 // Endpoint: PUT /api/settings/session
 // Request: { autoLogoutMinutes?: number, requirePasswordForSensitiveActions?: boolean }
 // Response: { settings: object, message: string }
-router.put('/session', requireUser, async (req, res) => {
+router.put('/session', requireUser(), async (req, res) => {
   console.log(`[SettingsRoutes] PUT /api/settings/session - User: ${req.user._id}`);
 
   try {
