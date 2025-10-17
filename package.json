@@ -1,0 +1,29 @@
+{
+  "name": "AlpacaTrader",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "postinstall": "npm run shared-install && concurrently -n \"client,server\" \"npm run client-install\" \"npm run server-install\"",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "concurrently -n \"shared,client,server\" \"npm run shared-dev\" \"npm run client\" \"npm run server\"",
+    "client": "cd client && npm run dev",
+    "client-install": "cd client && npm install",
+    "server": "cd server && npm run dev",
+    "server-install": "cd server && npm install",
+    "shared-install": "cd shared && npm install && npm run build",
+    "shared-build": "cd shared && npm run build",
+    "shared-dev": "cd shared && npm run dev",
+    "start": "concurrently -n \"client,server\" \"npm run client\" \"npm run server\"",
+    "lint": "concurrently -n \"client,server,shared\" \"cd client && npm run lint\" \"cd server && npm run lint\" \"cd shared && npm run lint\"",
+    "debug": "concurrently -n \"client,server\" \"npm run client\" \"cross-env NODE_OPTIONS=--inspect-brk=9229 npm run server\""
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "concurrently": "^9.1.0"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3"
+  }
+}
