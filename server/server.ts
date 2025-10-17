@@ -8,6 +8,7 @@ import strategyRoutes from './routes/strategyRoutes';
 import riskRoutes from './routes/riskRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
 import monitoringRoutes from './routes/monitoringRoutes';
+import settingsRoutes from './routes/settingsRoutes';
 import { connectDB } from './config/database';
 import { autoTradingJob } from './jobs/autoTradingJob';
 import portfolioSyncJob from './jobs/portfolioSyncJob';
@@ -55,6 +56,8 @@ app.use('/api/risk', riskRoutes);
 app.use('/api/analytics', analyticsRoutes);
 // Monitoring Routes
 app.use('/api/monitoring', monitoringRoutes);
+// Settings Routes
+app.use('/api/settings', settingsRoutes);
 
 // If no routes handled the request, it's a 404
 app.use((req: Request, res: Response) => {

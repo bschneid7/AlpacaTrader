@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Settings API</title>
+</head>
+<body>
+    <h1>Test Settings API</h1>
+    <div id="results"></div>
+
+    <script>
+        async function testAPI() {
+            const results = document.getElementById('results');
+
+            try {
+                // Login first
+                results.innerHTML += '<h2>1. Testing Login...</h2>';
+                const loginResponse = await fetch('http://localhost:3000/api/auth/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({email: 'alpaca-test@example.com', password: 'Admin123!@#'})
+                });
+                const loginData = await loginResponse.json();
+                results.innerHTML += `<pre>Login: ${JSON.stringify(loginData, null, 2)}</pre>`;
+
+                if (!loginData.accessToken) {
+                    results.innerHTML += '<p style="color:red">Login failed!</p>';
+                    return;
+                }
+
+                const token = loginData.accessToken;
+
+                // Test GET settings
+                results.innerHTML += '<h2>2. Testing GET /api/settings...</h2>';
+                const getResponse = await fetch('http://localhost:3000/api/settings', {
+                    headers: {'Authorization': `Bearer ${token}`}
+                });
+                const settingsData = await getResponse.json();
+                results.innerHTML += `<pre>Settings: ${JSON.stringify(settingsData, null, 2)}</pre>`;
+
+                // Test UPDATE notifications
+                results.innerHTML += '<h2>3. Testing PUT /api/settings/notifications...</h2>';
+                const updateNotifResponse = await fetch('http://localhost:3000/api/settings/notifications', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        emailNotifications: true,
+                        alertFrequency: 'daily',
+                        riskAlerts: true
+                    })
+                });
+                const notifData = await updateNotifResponse.json();
+                results.innerHTML += `<pre>Updated Notifications: ${JSON.stringify(notifData, null, 2)}</pre>`;
+
+                results.innerHTML += '<h2 style="color:green">All tests completed!</h2>';
+
+            } catch (error) {
+                results.innerHTML += `<p style="color:red">Error: ${error.message}</p>`;
+                console.error(error);
+            }
+        }
+
+        // Run tests on load
+        testAPI();
+    </script>
+</body>
+</html>
