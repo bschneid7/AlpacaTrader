@@ -603,14 +603,14 @@ export async function processUserTrading(userId: string): Promise<void> {
       console.log(`[Trading Engine] Using traditional technical indicator strategy`);
 
       // Decrypt credentials
-      const apiKey = alpacaAccount.decryptApiKey();
-      const secretKey = alpacaAccount.decryptSecretKey();
+      const apiKey = alpacaAccount.getDecryptedApiKey();
+      const secretKey = alpacaAccount.getDecryptedSecretKey();
 
       // Initialize Alpaca client
       const alpaca = new Alpaca({
         keyId: apiKey,
         secretKey: secretKey,
-        paper: alpacaAccount.mode === 'paper'
+        paper: alpacaAccount.isPaperTrading
       });
 
       // Check if market is open

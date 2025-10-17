@@ -3,7 +3,7 @@ import AlpacaAccount from '../models/AlpacaAccount';
 import Order from '../models/Order';
 import Position from '../models/Position';
 import Trade from '../models/Trade';
-import { decryptApiKey } from '../utils/encryption';
+import { decrypt } from '../utils/encryption';
 import * as monitoringService from './monitoringService';
 
 interface BracketOrderParams {
@@ -67,8 +67,8 @@ export async function submitBracketOrder(
     }
 
     // Decrypt API credentials
-    const apiKey = decryptApiKey(alpacaAccount.apiKey);
-    const apiSecret = decryptApiKey(alpacaAccount.apiSecret);
+    const apiKey = decrypt(alpacaAccount.apiKey);
+    const apiSecret = decrypt(alpacaAccount.secretKey);
 
     const baseUrl = alpacaAccount.isPaper
       ? 'https://paper-api.alpaca.markets'
@@ -165,8 +165,8 @@ export async function getOrderStatus(
       throw new Error('Alpaca account not connected');
     }
 
-    const apiKey = decryptApiKey(alpacaAccount.apiKey);
-    const apiSecret = decryptApiKey(alpacaAccount.apiSecret);
+    const apiKey = decrypt(alpacaAccount.apiKey);
+    const apiSecret = decrypt(alpacaAccount.secretKey);
 
     const baseUrl = alpacaAccount.isPaper
       ? 'https://paper-api.alpaca.markets'
@@ -201,8 +201,8 @@ export async function cancelOrder(
       throw new Error('Alpaca account not connected');
     }
 
-    const apiKey = decryptApiKey(alpacaAccount.apiKey);
-    const apiSecret = decryptApiKey(alpacaAccount.apiSecret);
+    const apiKey = decrypt(alpacaAccount.apiKey);
+    const apiSecret = decrypt(alpacaAccount.secretKey);
 
     const baseUrl = alpacaAccount.isPaper
       ? 'https://paper-api.alpaca.markets'

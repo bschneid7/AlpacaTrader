@@ -3,7 +3,7 @@ import AlpacaAccount from '../models/AlpacaAccount';
 import StrategyConfig from '../models/StrategyConfig';
 import StrategySignal from '../models/StrategySignal';
 import Position from '../models/Position';
-import { decryptApiKey } from '../utils/encryption';
+import { decrypt } from '../utils/encryption';
 import * as monitoringService from './monitoringService';
 
 interface BarData {
@@ -291,8 +291,8 @@ export async function runStrategyAnalysis(
     }
 
     // Decrypt API credentials
-    const apiKey = decryptApiKey(alpacaAccount.apiKey);
-    const apiSecret = decryptApiKey(alpacaAccount.apiSecret);
+    const apiKey = decrypt(alpacaAccount.apiKey);
+    const apiSecret = decrypt(alpacaAccount.secretKey);
 
     const signals: SignalResult[] = [];
 
