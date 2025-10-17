@@ -173,7 +173,7 @@ router.get('/status', requireUser(), async (req: AuthRequest, res: Response) => 
 // Description: Toggle Auto Trading
 // Endpoint: POST /api/alpaca/auto-trading/toggle
 // Request: { enabled: boolean }
-// Response: { success: boolean, enabled: boolean }
+// Response: { success: boolean, enabled: boolean, status: string, lastToggleTime: string }
 router.post('/auto-trading/toggle', requireUser(), async (req: AuthRequest, res: Response) => {
   try {
     const { enabled } = req.body;
@@ -188,11 +188,13 @@ router.post('/auto-trading/toggle', requireUser(), async (req: AuthRequest, res:
 
     console.log(`Toggling auto-trading for user: ${req.user.email} to ${enabled}`);
 
-    const newStatus = await AlpacaService.toggleAutoTrading(req.user._id, enabled);
+    const result = await AlpacaService.toggleAutoTrading(req.user._id, enabled);
 
     res.status(200).json({
       success: true,
-      enabled: newStatus,
+      enabled: result.enabled,
+      status: result.status,
+      lastToggleTime: result.lastToggleTime.toISOString(),
     });
   } catch (error: unknown) {
     if (error instanceof Error) {
@@ -208,7 +210,7 @@ router.post('/auto-trading/toggle', requireUser(), async (req: AuthRequest, res:
 // Description: Get Auto Trading Status
 // Endpoint: GET /api/alpaca/auto-trading/status
 // Request: {}
-// Response: { enabled: boolean }
+// Response: { enabled: boolean, status: string, lastToggleTime: string | null, isAccountConnected: boolean }
 router.get('/auto-trading/status', requireUser(), async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
@@ -217,9 +219,14 @@ router.get('/auto-trading/status', requireUser(), async (req: AuthRequest, res: 
 
     console.log(`Fetching auto-trading status for user: ${req.user.email}`);
 
-    const enabled = await AlpacaService.getAutoTradingStatus(req.user._id);
+    const statusData = await AlpacaService.getAutoTradingStatus(req.user._id);
 
-    res.status(200).json({ enabled });
+    res.status(200).json({
+      enabled: statusData.enabled,
+      status: statusData.status,
+      lastToggleTime: statusData.lastToggleTime ? statusData.lastToggleTime.toISOString() : null,
+      isAccountConnected: statusData.isAccountConnected,
+    });
   } catch (error: unknown) {
     if (error instanceof Error) {
       console.error(`Error fetching auto-trading status: ${error.message}`);

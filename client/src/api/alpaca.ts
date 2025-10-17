@@ -124,7 +124,7 @@ export const getRecentTrades = () => {
 // Description: Toggle Auto Trading
 // Endpoint: POST /api/alpaca/auto-trading/toggle
 // Request: { enabled: boolean }
-// Response: { success: boolean, enabled: boolean }
+// Response: { success: boolean, enabled: boolean, status: string, lastToggleTime: string }
 export const toggleAutoTrading = async (data: { enabled: boolean }) => {
   try {
     const response = await api.post('/api/alpaca/auto-trading/toggle', data);
@@ -139,7 +139,7 @@ export const toggleAutoTrading = async (data: { enabled: boolean }) => {
 // Description: Get Auto Trading Status
 // Endpoint: GET /api/alpaca/auto-trading/status
 // Request: {}
-// Response: { enabled: boolean }
+// Response: { enabled: boolean, status: string, lastToggleTime: string | null, isAccountConnected: boolean }
 export const getAutoTradingStatus = async () => {
   try {
     const response = await api.get('/api/alpaca/auto-trading/status');

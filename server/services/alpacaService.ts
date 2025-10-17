@@ -1,6 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
 import AlpacaAccount, { IAlpacaAccount } from '../models/AlpacaAccount';
 import Position from '../models/Position';
+import TradingPreferences from '../models/TradingPreferences';
 import mongoose from 'mongoose';
 
 interface AlpacaAccountInfo {
@@ -462,27 +463,59 @@ class AlpacaService {
   /**
    * Toggle auto-trading status
    */
-  async toggleAutoTrading(userId: string, enabled: boolean): Promise<boolean> {
+  async toggleAutoTrading(userId: string, enabled: boolean): Promise<{
+    enabled: boolean;
+    status: 'active' | 'paused' | 'stopped';
+    lastToggleTime: Date;
+  }> {
     try {
       console.log(`Toggling auto-trading for user ${userId}: ${enabled}`);
 
+      // Verify Alpaca account is connected
       const alpacaAccount = await AlpacaAccount.findOne({
         userId: new mongoose.Types.ObjectId(userId),
         isConnected: true
       });
 
       if (!alpacaAccount) {
+        console.error(`Alpaca account not found or not connected for user ${userId}`);
         throw new Error('Alpaca account not connected');
       }
 
-      alpacaAccount.autoTradingEnabled = enabled;
-      await alpacaAccount.save();
+      // Determine trading status based on enabled flag
+      const tradingStatus = enabled ? 'active' : 'stopped';
 
-      console.log('Auto-trading status updated successfully');
-      return enabled;
+      // Find or create trading preferences
+      let tradingPrefs = await TradingPreferences.findOne({
+        userId: new mongoose.Types.ObjectId(userId)
+      });
+
+      if (tradingPrefs) {
+        console.log(`Updating existing trading preferences for user ${userId}`);
+        tradingPrefs.autoTradingEnabled = enabled;
+        tradingPrefs.tradingStatus = tradingStatus;
+        tradingPrefs.lastToggleTime = new Date();
+        await tradingPrefs.save();
+      } else {
+        console.log(`Creating new trading preferences for user ${userId}`);
+        tradingPrefs = await TradingPreferences.create({
+          userId: new mongoose.Types.ObjectId(userId),
+          autoTradingEnabled: enabled,
+          tradingStatus,
+          lastToggleTime: new Date()
+        });
+      }
+
+      console.log(`Auto-trading ${enabled ? 'enabled' : 'disabled'} successfully for user ${userId}`);
+
+      return {
+        enabled: tradingPrefs.autoTradingEnabled,
+        status: tradingPrefs.tradingStatus,
+        lastToggleTime: tradingPrefs.lastToggleTime
+      };
     } catch (error: unknown) {
       if (error instanceof Error) {
-        console.error('Error toggling auto-trading:', error.message);
+        console.error('Error toggling auto-trading:', error.message, error.stack);
         throw error;
       }
       throw new Error('Failed to toggle auto-trading');
@@ -492,21 +525,64 @@ class AlpacaService {
   /**
    * Get auto-trading status
    */
-  async getAutoTradingStatus(userId: string): Promise<boolean> {
+  async getAutoTradingStatus(userId: string): Promise<{
+    enabled: boolean;
+    status: 'active' | 'paused' | 'stopped';
+    lastToggleTime: Date | null;
+    isAccountConnected: boolean;
+  }> {
     try {
+      console.log(`Fetching auto-trading status for user ${userId}`);
+
+      // Check if Alpaca account is connected
       const alpacaAccount = await AlpacaAccount.findOne({
         userId: new mongoose.Types.ObjectId(userId),
         isConnected: true
       });
 
-      if (!alpacaAccount) {
-        return false;
+      const isAccountConnected = !!alpacaAccount;
+
+      if (!isAccountConnected) {
+        console.log(`Alpaca account not connected for user ${userId}`);
+        return {
+          enabled: false,
+          status: 'stopped',
+          lastToggleTime: null,
+          isAccountConnected: false
+        };
       }
 
-      return alpacaAccount.autoTradingEnabled;
+      // Get trading preferences
+      const tradingPrefs = await TradingPreferences.findOne({
+        userId: new mongoose.Types.ObjectId(userId)
+      });
+
+      if (!tradingPrefs) {
+        console.log(`No trading preferences found for user ${userId}, returning defaults`);
+        return {
+          enabled: false,
+          status: 'stopped',
+          lastToggleTime: null,
+          isAccountConnected: true
+        };
+      }
+
+      console.log(`Auto-trading status retrieved successfully for user ${userId}`);
+
+      return {
+        enabled: tradingPrefs.autoTradingEnabled,
+        status: tradingPrefs.tradingStatus,
+        lastToggleTime: tradingPrefs.lastToggleTime,
+        isAccountConnected: true
+      };
     } catch (error: unknown) {
       console.error('Error getting auto-trading status:', error);
-      return false;
+      return {
+        enabled: false,
+        status: 'stopped',
+        lastToggleTime: null,
+        isAccountConnected: false
+      };
     }
   }
 }
