@@ -4,6 +4,7 @@ import { Request, Response } from 'express';
 import basicRoutes from './routes/index';
 import authRoutes from './routes/authRoutes';
 import alpacaRoutes from './routes/alpacaRoutes';
+import strategyRoutes from './routes/strategyRoutes';
 import { connectDB } from './config/database';
 import cors from 'cors';
 
@@ -41,6 +42,8 @@ app.use(basicRoutes);
 app.use('/api/auth', authRoutes);
 // Alpaca Routes
 app.use('/api/alpaca', alpacaRoutes);
+// Strategy Routes
+app.use('/api/strategy', strategyRoutes);
 
 // If no routes handled the request, it's a 404
 app.use((req: Request, res: Response) => {

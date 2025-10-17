@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import type { StrategyConfig } from '@/types/strategy';
 
-const SECTORS = ['Technology', 'Healthcare', 'Finance', 'Consumer', 'Energy', 'Industrial', 'Materials', 'Utilities'];
+const SECTORS = ['Technology', 'Healthcare', 'Finance', 'Consumer', 'Industrial', 'Energy', 'Utilities', 'Materials', 'Real Estate', 'Communication'];
 const MARKET_CAPS = ['Large', 'Mid', 'Small'];
 
 export function Strategy() {
@@ -47,8 +47,26 @@ export function Strategy() {
 
   const fetchConfig = useCallback(async () => {
     try {
-      const data = await getStrategyConfig() as StrategyConfig;
-      setConfig(data);
+      const response = await getStrategyConfig();
+      const data = response.config;
+
+      // Map backend data structure to frontend structure
+      setConfig({
+        maxPositionSize: data.maxPositionSize,
+        maxConcurrentPositions: data.maxConcurrentPositions,
+        stopLoss: data.stopLossPercentage,
+        takeProfit: data.takeProfitTarget,
+        targetMonthlyReturn: (data.monthlyReturnTarget.min + data.monthlyReturnTarget.max) / 2,
+        preMarket: data.enablePreMarket,
+        afterHours: data.enableAfterHours,
+        minStockPrice: data.minStockPrice,
+        minDailyVolume: data.minDailyVolume,
+        marketCaps: data.marketCapPreferences.map((cap: string) => cap.charAt(0).toUpperCase() + cap.slice(1)),
+        sectors: data.sectorPreferences.map((sector: string) => {
+          // Convert backend format (snake_case) to frontend format (Title Case)
+          return sector.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+        }),
+      });
     } catch (error) {
       toast({
         title: 'Error',
@@ -68,14 +86,33 @@ export function Strategy() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const response = await updateStrategyConfig(config) as { success: boolean; message: string };
-      if (response.success) {
-        toast({
-          title: 'Success',
-          description: response.message,
-        });
-        setShowConfirm(false);
-      }
+      // Map frontend data structure to backend structure
+      const updateData = {
+        maxPositionSize: config.maxPositionSize,
+        maxConcurrentPositions: config.maxConcurrentPositions,
+        stopLossPercentage: config.stopLoss,
+        takeProfitTarget: config.takeProfit,
+        monthlyReturnTarget: {
+          min: Math.floor(config.targetMonthlyReturn - 1),
+          max: Math.ceil(config.targetMonthlyReturn + 1),
+        },
+        enablePreMarket: config.preMarket,
+        enableAfterHours: config.afterHours,
+        marketHoursOnly: !config.preMarket && !config.afterHours,
+        minStockPrice: config.minStockPrice,
+        minDailyVolume: config.minDailyVolume,
+        marketCapPreferences: config.marketCaps.map(cap => cap.toLowerCase()),
+        sectorPreferences: config.sectors.map(sector => sector.toLowerCase().replace(/ /g, '_')),
+      };
+
+      const response = await updateStrategyConfig(updateData);
+      toast({
+        title: 'Success',
+        description: response.message,
+      });
+      setShowConfirm(false);
+      // Refresh config to show updated values
+      await fetchConfig();
     } catch (error) {
       toast({
         title: 'Error',
@@ -89,16 +126,14 @@ export function Strategy() {
 
   const handleReset = async () => {
     try {
-      const response = await resetStrategyToDefaults() as { success: boolean; message: string };
-      if (response.success) {
-        toast({
-          title: 'Success',
-          description: response.message,
-        });
-        const data = await getStrategyConfig() as StrategyConfig;
-        setConfig(data);
-        setShowReset(false);
-      }
+      const response = await resetStrategyToDefaults();
+      toast({
+        title: 'Success',
+        description: response.message,
+      });
+      setShowReset(false);
+      // Refresh config to show reset values
+      await fetchConfig();
     } catch (error) {
       toast({
         title: 'Error',
