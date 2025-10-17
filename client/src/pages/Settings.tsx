@@ -7,8 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/useToast';
 import { getAccountSettings, updateNotificationSettings, disconnectAlpacaAccount } from '@/api/settings';
+import { getAccountStatus } from '@/api/alpaca';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertTriangle, Save } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +29,12 @@ export function Settings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [accountInfo, setAccountInfo] = useState<AccountSettings | null>(null);
+  const [alpacaStatus, setAlpacaStatus] = useState<{
+    isConnected: boolean;
+    accountNumber?: string;
+    accountType?: string;
+    isPaperTrading?: boolean;
+  } | null>(null);
   const [showDisconnect, setShowDisconnect] = useState(false);
   const { toast } = useToast();
 
@@ -36,13 +46,34 @@ export function Settings() {
 
   const fetchSettings = useCallback(async () => {
     try {
+      // Fetch account settings (mocked data)
       const data = await getAccountSettings() as AccountSettings;
-      setAccountInfo(data);
       setNotificationSettings({
         emailNotifications: data.emailNotifications,
         email: data.email,
         alertFrequency: data.alertFrequency,
       });
+
+      // Fetch real Alpaca account status
+      const status = await getAccountStatus() as {
+        isConnected: boolean;
+        accountNumber?: string;
+        accountType?: string;
+        isPaperTrading?: boolean;
+      };
+      setAlpacaStatus(status);
+
+      // Only set account info if Alpaca is connected
+      if (status.isConnected) {
+        setAccountInfo({
+          ...data,
+          accountNumber: status.accountNumber || '',
+          accountType: status.accountType || '',
+          accountStatus: 'Active',
+        });
+      } else {
+        setAccountInfo(null);
+      }
     } catch (error) {
       toast({
         title: 'Error',
@@ -89,6 +120,8 @@ export function Settings() {
           description: response.message,
         });
         setShowDisconnect(false);
+        // Refresh settings to update the UI
+        fetchSettings();
       }
     } catch (error) {
       toast({
@@ -99,7 +132,7 @@ export function Settings() {
     }
   };
 
-  if (loading || !accountInfo) {
+  if (loading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-32 w-full" />
@@ -116,31 +149,55 @@ export function Settings() {
           <p className="text-muted-foreground">Manage your account and application preferences</p>
         </div>
 
-        <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-          <CardHeader>
-            <CardTitle>Alpaca Account Information</CardTitle>
-            <CardDescription>Your connected brokerage account details</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Account Number</Label>
-                <Input value={`****${accountInfo.accountNumber.slice(-4)}`} disabled />
+        {!alpacaStatus?.isConnected ? (
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Alpaca Account Not Connected</AlertTitle>
+            <AlertDescription>
+              Please connect your Alpaca account in the Dashboard to view account details and start trading.
+              <Link to="/dashboard">
+                <Button variant="link" className="px-0 pl-1">
+                  Go to Dashboard
+                </Button>
+              </Link>
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+            <CardHeader>
+              <CardTitle>Alpaca Account Information</CardTitle>
+              <CardDescription>Your connected brokerage account details</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Account Number</Label>
+                  <Input value={`****${accountInfo?.accountNumber?.slice(-4) || ''}`} disabled />
+                </div>
+                <div className="space-y-2">
+                  <Label>Account Type</Label>
+                  <Input value={accountInfo?.accountType || ''} disabled />
+                </div>
               </div>
               <div className="space-y-2">
-                <Label>Account Type</Label>
-                <Input value={accountInfo.accountType} disabled />
+                <Label>Account Status</Label>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-green-600" />
+                  <span className="text-sm font-medium text-green-600">{accountInfo?.accountStatus || 'Active'}</span>
+                </div>
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Account Status</Label>
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-green-600" />
-                <span className="text-sm font-medium text-green-600">{accountInfo.accountStatus}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              {alpacaStatus?.isPaperTrading && (
+                <div className="space-y-2">
+                  <Label>Trading Mode</Label>
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-blue-600" />
+                    <span className="text-sm font-medium text-blue-600">Paper Trading (Test Mode)</span>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="bg-card/50 backdrop-blur-sm border-border/50">
           <CardHeader>
@@ -203,26 +260,28 @@ export function Settings() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-red-500/10 to-orange-500/10 border-red-500/20">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-red-600">
-              <AlertTriangle className="h-5 w-5" />
-              Danger Zone
-            </CardTitle>
-            <CardDescription>Irreversible actions that affect your account</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Disconnect Alpaca Account</Label>
-              <p className="text-sm text-muted-foreground">
-                This will disconnect your Alpaca brokerage account and stop all automated trading. You will need to reconnect to resume trading.
-              </p>
-              <Button variant="destructive" onClick={() => setShowDisconnect(true)}>
-                Disconnect Account
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {alpacaStatus?.isConnected && (
+          <Card className="bg-gradient-to-br from-red-500/10 to-orange-500/10 border-red-500/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-red-600">
+                <AlertTriangle className="h-5 w-5" />
+                Danger Zone
+              </CardTitle>
+              <CardDescription>Irreversible actions that affect your account</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Disconnect Alpaca Account</Label>
+                <p className="text-sm text-muted-foreground">
+                  This will disconnect your Alpaca brokerage account and stop all automated trading. You will need to reconnect to resume trading.
+                </p>
+                <Button variant="destructive" onClick={() => setShowDisconnect(true)}>
+                  Disconnect Account
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="bg-card/50 backdrop-blur-sm border-border/50">
           <CardHeader>

@@ -428,13 +428,17 @@ class AlpacaService {
       });
 
       if (!result) {
+        // Don't log this as an error - it's an expected state when account is not connected
         throw new Error('Alpaca account not found');
       }
 
       console.log('Alpaca account disconnected successfully');
     } catch (error: unknown) {
       if (error instanceof Error) {
-        console.error('Error disconnecting Alpaca account:', error.message);
+        // Only log if it's NOT the expected "account not found" error
+        if (error.message !== 'Alpaca account not found') {
+          console.error('Error disconnecting Alpaca account:', error.message);
+        }
         throw error;
       }
       throw new Error('Failed to disconnect Alpaca account');

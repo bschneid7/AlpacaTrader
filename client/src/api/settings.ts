@@ -63,8 +63,12 @@ export const disconnectAlpacaAccount = async () => {
     const response = await api.delete('/api/alpaca/disconnect');
     return response.data;
   } catch (error: unknown) {
-    console.error(error);
     const err = error as { response?: { data?: { error?: string } }; message?: string };
-    throw new Error(err?.response?.data?.error || err.message || 'Unknown error');
+    const errorMessage = err?.response?.data?.error || err.message || 'Unknown error';
+    // Only log if it's not the expected "account not found" error
+    if (errorMessage !== 'Alpaca account not found') {
+      console.error(error);
+    }
+    throw new Error(errorMessage);
   }
 };

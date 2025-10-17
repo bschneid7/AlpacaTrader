@@ -132,7 +132,10 @@ router.delete('/disconnect', requireUser(), async (req: AuthRequest, res: Respon
     });
   } catch (error: unknown) {
     if (error instanceof Error) {
-      console.error(`Error disconnecting Alpaca account: ${error.message}`);
+      // Only log if it's NOT the expected "account not found" error
+      if (error.message !== 'Alpaca account not found') {
+        console.error(`Error disconnecting Alpaca account: ${error.message}`);
+      }
       res.status(400).json({ error: error.message });
     } else {
       console.error('Unknown error disconnecting Alpaca account');
