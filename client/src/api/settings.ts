@@ -1,57 +1,73 @@
 import api from './api';
 
-// Description: Get Account Settings
-// Endpoint: GET /api/settings/account
+// Description: Get user account settings
+// Endpoint: GET /api/settings
 // Request: {}
-// Response: { accountNumber: string, accountType: string, accountStatus: string, emailNotifications: boolean, email: string, alertFrequency: string }
-export const getAccountSettings = () => {
-  // Mocking the response - This will be implemented in a future task
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        accountNumber: 'ACC123456789',
-        accountType: 'Margin',
-        accountStatus: 'Active',
-        emailNotifications: true,
-        email: 'user@example.com',
-        alertFrequency: 'Immediate'
-      });
-    }, 500);
-  });
-  // try {
-  //   const response = await api.get('/api/settings/account');
-  //   return response.data;
-  // } catch (error: any) {
-  //   console.error(error);
-  //   throw new Error(error?.response?.data?.error || error.message);
-  // }
+// Response: { settings: object }
+export const getAccountSettings = async () => {
+  try {
+    const response = await api.get('/api/settings');
+    return response.data;
+  } catch (error: any) {
+    console.error('Error fetching account settings:', error);
+    throw new Error(error?.response?.data?.error || error.message);
+  }
 };
 
-// Description: Update Notification Settings
+// Description: Update notification preferences
 // Endpoint: PUT /api/settings/notifications
-// Request: { emailNotifications: boolean, email: string, alertFrequency: string }
-// Response: { success: boolean, message: string }
-export const updateNotificationSettings = (data: {
-  emailNotifications: boolean;
-  email: string;
-  alertFrequency: string;
-}) => {
-  // Mocking the response - This will be implemented in a future task
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        success: true,
-        message: 'Notification settings updated successfully'
-      });
-    }, 500);
-  });
-  // try {
-  //   const response = await api.put('/api/settings/notifications', data);
-  //   return response.data;
-  // } catch (error: any) {
-  //   console.error(error);
-  //   throw new Error(error?.response?.data?.error || error.message);
-  // }
+// Request: { emailNotifications: boolean, emailAddress?: string, alertFrequency?: string, ... }
+// Response: { settings: object, message: string }
+export const updateNotificationSettings = async (preferences: any) => {
+  try {
+    const response = await api.put('/api/settings/notifications', preferences);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error updating notification preferences:', error);
+    throw new Error(error?.response?.data?.error || error.message);
+  }
+};
+
+// Description: Update account details
+// Endpoint: PUT /api/settings/account
+// Request: { firstName?: string, lastName?: string, phone?: string, timezone?: string, language?: string }
+// Response: { settings: object, message: string }
+export const updateAccountDetails = async (details: any) => {
+  try {
+    const response = await api.put('/api/settings/account', details);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error updating account details:', error);
+    throw new Error(error?.response?.data?.error || error.message);
+  }
+};
+
+// Description: Update display preferences
+// Endpoint: PUT /api/settings/display
+// Request: { currencyFormat?: string, dateFormat?: string, timeFormat?: string, dashboardRefreshRate?: number }
+// Response: { settings: object, message: string }
+export const updateDisplayPreferences = async (preferences: any) => {
+  try {
+    const response = await api.put('/api/settings/display', preferences);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error updating display preferences:', error);
+    throw new Error(error?.response?.data?.error || error.message);
+  }
+};
+
+// Description: Update session settings
+// Endpoint: PUT /api/settings/session
+// Request: { autoLogoutMinutes?: number, requirePasswordForSensitiveActions?: boolean }
+// Response: { settings: object, message: string }
+export const updateSessionSettings = async (settings: any) => {
+  try {
+    const response = await api.put('/api/settings/session', settings);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error updating session settings:', error);
+    throw new Error(error?.response?.data?.error || error.message);
+  }
 };
 
 // Description: Disconnect Alpaca Account

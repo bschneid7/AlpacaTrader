@@ -34,6 +34,14 @@ export const updateStrategyConfig = async (data: {
   minDailyVolume?: number;
   marketCapPreferences?: string[];
   sectorPreferences?: string[];
+  emaFastPeriod?: number;
+  emaSlowPeriod?: number;
+  atrPeriod?: number;
+  atrStopMultiplier?: number;
+  atrTakeProfitMultiplier?: number;
+  riskPerTrade?: number;
+  maxPortfolioRisk?: number;
+  tradingUniverse?: string[];
 }) => {
   try {
     const response = await api.put('/api/strategy/config', data);
@@ -65,6 +73,49 @@ export const resetStrategyToDefaults = async () => {
 export const getStrategyPerformance = async () => {
   try {
     const response = await api.get('/api/strategy/performance');
+    return response.data;
+  } catch (error) {
+    console.error(error);
+    throw new Error(error?.response?.data?.error || error.message);
+  }
+};
+
+// Description: Run Strategy Analysis (EMA/ATR)
+// Endpoint: POST /api/strategy-engine/analyze
+// Request: {}
+// Response: { signals: Array<StrategySignal>, count: number, buySignals: number }
+export const runStrategyAnalysis = async () => {
+  try {
+    const response = await api.post('/api/strategy-engine/analyze');
+    return response.data;
+  } catch (error) {
+    console.error(error);
+    throw new Error(error?.response?.data?.error || error.message);
+  }
+};
+
+// Description: Get Unexecuted Strategy Signals
+// Endpoint: GET /api/strategy-engine/signals/unexecuted
+// Request: {}
+// Response: { signals: Array<StrategySignal> }
+export const getUnexecutedSignals = async () => {
+  try {
+    const response = await api.get('/api/strategy-engine/signals/unexecuted');
+    return response.data;
+  } catch (error) {
+    console.error(error);
+    throw new Error(error?.response?.data?.error || error.message);
+  }
+};
+
+// Description: Get Recent Strategy Signals
+// Endpoint: GET /api/strategy-engine/signals/recent
+// Request: { limit?: number }
+// Response: { signals: Array<StrategySignal> }
+export const getRecentSignals = async (limit?: number) => {
+  try {
+    const params = limit ? { limit } : {};
+    const response = await api.get('/api/strategy-engine/signals/recent', { params });
     return response.data;
   } catch (error) {
     console.error(error);

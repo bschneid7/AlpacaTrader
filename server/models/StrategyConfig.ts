@@ -26,6 +26,18 @@ export interface IStrategyConfig extends Document {
   marketCapPreferences: string[]; // ["small", "mid", "large"]
   sectorPreferences: string[]; // ["technology", "healthcare", "finance", etc.]
 
+  // EMA/ATR Strategy Parameters
+  emaFastPeriod: number; // Fast EMA period (default: 20)
+  emaSlowPeriod: number; // Slow EMA period (default: 50)
+  atrPeriod: number; // ATR lookback period (default: 14)
+  atrStopMultiplier: number; // Stop loss multiplier (default: 1.5)
+  atrTakeProfitMultiplier: number; // Take profit multiplier (default: 3.0)
+  riskPerTrade: number; // Risk per trade as percentage (default: 0.5%)
+  maxPortfolioRisk: number; // Max portfolio risk as percentage (default: 2.0%)
+
+  // Trading Universe
+  tradingUniverse: string[]; // Array of symbols to trade
+
   // Metadata
   createdAt: Date;
   updatedAt: Date;
@@ -37,8 +49,7 @@ const strategyConfigSchema = new Schema<IStrategyConfig>(
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
-      unique: true,
-      index: true,
+      unique: true, // unique: true already creates an index, no need for explicit index
     },
     maxPositionSize: {
       type: Number,
@@ -125,6 +136,59 @@ const strategyConfigSchema = new Schema<IStrategyConfig>(
       ],
       default: ['technology', 'healthcare', 'finance'],
     },
+    emaFastPeriod: {
+      type: Number,
+      required: true,
+      min: 5,
+      max: 50,
+      default: 20,
+    },
+    emaSlowPeriod: {
+      type: Number,
+      required: true,
+      min: 20,
+      max: 200,
+      default: 50,
+    },
+    atrPeriod: {
+      type: Number,
+      required: true,
+      min: 7,
+      max: 30,
+      default: 14,
+    },
+    atrStopMultiplier: {
+      type: Number,
+      required: true,
+      min: 0.5,
+      max: 5.0,
+      default: 1.5,
+    },
+    atrTakeProfitMultiplier: {
+      type: Number,
+      required: true,
+      min: 1.0,
+      max: 10.0,
+      default: 3.0,
+    },
+    riskPerTrade: {
+      type: Number,
+      required: true,
+      min: 0.1,
+      max: 5.0,
+      default: 0.5,
+    },
+    maxPortfolioRisk: {
+      type: Number,
+      required: true,
+      min: 0.5,
+      max: 10.0,
+      default: 2.0,
+    },
+    tradingUniverse: {
+      type: [String],
+      default: ['SPY', 'QQQ', 'IWM', 'AAPL', 'MSFT', 'NVDA'],
+    },
   },
   {
     timestamps: true,
@@ -148,6 +212,14 @@ export const DEFAULT_AGGRESSIVE_STRATEGY = {
   minDailyVolume: 1000000,
   marketCapPreferences: ['mid', 'large'],
   sectorPreferences: ['technology', 'healthcare', 'finance'],
+  emaFastPeriod: 20,
+  emaSlowPeriod: 50,
+  atrPeriod: 14,
+  atrStopMultiplier: 1.5,
+  atrTakeProfitMultiplier: 3.0,
+  riskPerTrade: 0.5,
+  maxPortfolioRisk: 2.0,
+  tradingUniverse: ['SPY', 'QQQ', 'IWM', 'AAPL', 'MSFT', 'NVDA'],
 };
 
 const StrategyConfig = mongoose.model<IStrategyConfig>('StrategyConfig', strategyConfigSchema);

@@ -11,6 +11,7 @@ import {
   getRecentTrades,
   getAutoTradingStatus,
   getStrategyPerformance,
+  getAccountStatus,
 } from '@/api/alpaca';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { AccountData, Position, RecentTrade, StrategyPerformance as StrategyPerformanceType } from '@/types/dashboard';
@@ -21,19 +22,23 @@ export function Dashboard() {
   const [positions, setPositions] = useState<Position[]>([]);
   const [trades, setTrades] = useState<RecentTrade[]>([]);
   const [autoTradingEnabled, setAutoTradingEnabled] = useState(false);
+  const [isAccountConnected, setIsAccountConnected] = useState(false);
   const [performance, setPerformance] = useState<StrategyPerformanceType | null>(null);
   const { toast } = useToast();
 
   const fetchData = useCallback(async () => {
     try {
-      const [accountRes, positionsRes, tradesRes, statusRes, performanceRes] = await Promise.all([
+      const [accountStatusRes, accountRes, positionsRes, tradesRes, statusRes, performanceRes] = await Promise.all([
+        getAccountStatus().catch(() => ({ isConnected: false })),
         getAccountOverview().catch(() => null),
         getCurrentPositions().catch(() => ({ positions: [] })),
         getRecentTrades().catch(() => ({ trades: [] })),
-        getAutoTradingStatus().catch(() => ({ enabled: false })),
+        getAutoTradingStatus().catch(() => ({ enabled: false, isAccountConnected: false })),
         getStrategyPerformance().catch(() => null),
       ]);
 
+      const accountStatus = accountStatusRes as { isConnected: boolean };
+      setIsAccountConnected(accountStatus.isConnected);
       setAccountData(accountRes as AccountData | null);
       setPositions((positionsRes as { positions: Position[] })?.positions || []);
       setTrades((tradesRes as { trades: RecentTrade[] })?.trades || []);
@@ -81,6 +86,7 @@ export function Dashboard() {
 
       <AutoTradingToggle
         initialEnabled={autoTradingEnabled}
+        isAccountConnected={isAccountConnected}
         onToggle={(enabled) => setAutoTradingEnabled(enabled)}
       />
 

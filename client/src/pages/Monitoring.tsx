@@ -36,15 +36,16 @@ export function Monitoring() {
       const [watchlistRes, ordersRes, activityRes, alertsRes] = await Promise.all([
         getWatchlist(),
         getActiveOrders(),
-        getActivityLog(),
-        getAlerts(),
+        getActivityLog({ limit: 20 }),
+        getAlerts({ limit: 10 }),
       ]);
 
-      setWatchlist((watchlistRes as { stocks: WatchlistStock[] }).stocks);
-      setOrders((ordersRes as { orders: ActiveOrder[] }).orders);
-      setActivityLog((activityRes as { activities: ActivityLogItem[] }).activities);
-      setAlerts((alertsRes as { alerts: Alert[] }).alerts);
+      setWatchlist((watchlistRes as { watchlist: WatchlistStock[] }).watchlist || []);
+      setOrders((ordersRes as { orders: ActiveOrder[] }).orders || []);
+      setActivityLog((activityRes as { activities: ActivityLogItem[] }).activities || []);
+      setAlerts((alertsRes as { alerts: Alert[] }).alerts || []);
     } catch (error) {
+      console.error('Error fetching monitoring data:', error);
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to fetch monitoring data',
@@ -72,15 +73,14 @@ export function Monitoring() {
 
     setCancelling(true);
     try {
-      const response = await cancelOrder(selectedOrderId) as { success: boolean; message: string };
-      if (response.success) {
-        toast({
-          title: 'Order Cancelled',
-          description: response.message,
-        });
-        fetchData();
-      }
+      await cancelOrder(selectedOrderId);
+      toast({
+        title: 'Order Cancelled',
+        description: `Order ${selectedOrderId} has been cancelled successfully`,
+      });
+      fetchData();
     } catch (error) {
+      console.error('Error cancelling order:', error);
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to cancel order',
@@ -114,15 +114,27 @@ export function Monitoring() {
     }
   };
 
-  const getActivityIcon = (type: string) => {
-    switch (type) {
+  const getActivityIcon = (severity: string) => {
+    switch (severity) {
       case 'success':
         return <CheckCircle2 className="h-4 w-4 text-green-600" />;
       case 'warning':
+      case 'error':
         return <AlertCircle className="h-4 w-4 text-yellow-600" />;
       default:
         return <Info className="h-4 w-4 text-blue-600" />;
     }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusMap: { [key: string]: { label: string; variant: 'default' | 'secondary' | 'outline' } } = {
+      monitoring: { label: 'Monitoring', variant: 'secondary' },
+      buy_signal: { label: 'Buy Signal Detected', variant: 'default' },
+      analyzing: { label: 'Analyzing', variant: 'outline' },
+    };
+
+    const statusInfo = statusMap[status] || { label: status, variant: 'secondary' as const };
+    return <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>;
   };
 
   if (loading) {
@@ -166,35 +178,39 @@ export function Monitoring() {
               <CardDescription>Stocks being analyzed by the algorithm</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Symbol</TableHead>
-                    <TableHead className="text-right">Price</TableHead>
-                    <TableHead className="text-right">Change</TableHead>
-                    <TableHead>Signal</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {watchlist.map((stock) => (
-                    <TableRow key={stock.symbol}>
-                      <TableCell className="font-medium">{stock.symbol}</TableCell>
-                      <TableCell className="text-right">${stock.price.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">
-                        <div className={`flex items-center justify-end gap-1 ${stock.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {stock.change >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                          <span>{stock.change >= 0 ? '+' : ''}{stock.change.toFixed(2)}%</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={stock.signal === 'Buy Signal Detected' ? 'default' : 'secondary'}>
-                          {stock.signal}
-                        </Badge>
-                      </TableCell>
+              {watchlist.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No stocks in watchlist
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Symbol</TableHead>
+                      <TableHead className="text-right">Price</TableHead>
+                      <TableHead className="text-right">Change</TableHead>
+                      <TableHead>Signal</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {watchlist.map((stock) => (
+                      <TableRow key={stock.symbol}>
+                        <TableCell className="font-medium">{stock.symbol}</TableCell>
+                        <TableCell className="text-right">${stock.price.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className={`flex items-center justify-end gap-1 ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {stock.changePercent >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                            <span>{stock.changePercent >= 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(stock.status)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
 
@@ -224,9 +240,11 @@ export function Monitoring() {
                       <TableRow key={order.orderId}>
                         <TableCell className="font-medium">{order.symbol}</TableCell>
                         <TableCell>
-                          <Badge variant="outline">{order.type}</Badge>
+                          <Badge variant="outline" className="capitalize">{order.type}</Badge>
                         </TableCell>
-                        <TableCell className="text-right">${order.targetPrice.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">
+                          {order.limitPrice ? `$${order.limitPrice.toFixed(2)}` : 'Market'}
+                        </TableCell>
                         <TableCell className="text-right">{order.quantity}</TableCell>
                         <TableCell className="text-right">
                           <Button
@@ -254,22 +272,28 @@ export function Monitoring() {
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-[300px] pr-4">
-              <div className="space-y-2">
-                {activityLog.map((activity, index) => (
-                  <div
-                    key={index}
-                    className="flex items-start gap-3 rounded-lg border bg-card p-3 hover:bg-accent/50 transition-colors"
-                  >
-                    {getActivityIcon(activity.type)}
-                    <div className="flex-1">
-                      <p className="text-sm">{activity.message}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(activity.time), { addSuffix: true })}
-                      </p>
+              {activityLog.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No activity logged yet
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {activityLog.map((activity, index) => (
+                    <div
+                      key={activity._id || index}
+                      className="flex items-start gap-3 rounded-lg border bg-card p-3 hover:bg-accent/50 transition-colors"
+                    >
+                      {getActivityIcon(activity.severity)}
+                      <div className="flex-1">
+                        <p className="text-sm">{activity.action}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </ScrollArea>
           </CardContent>
         </Card>
@@ -280,22 +304,29 @@ export function Monitoring() {
             <CardDescription>Important notifications and warnings</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {alerts.map((alert) => (
-                <div
-                  key={alert.id}
-                  className={`flex items-start gap-3 rounded-lg border p-4 ${getAlertColor(alert.severity)}`}
-                >
-                  {getAlertIcon(alert.severity)}
-                  <div className="flex-1">
-                    <p className="font-medium">{alert.message}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {formatDistanceToNow(new Date(alert.time), { addSuffix: true })}
-                    </p>
+            {alerts.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No alerts
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {alerts.map((alert) => (
+                  <div
+                    key={alert._id}
+                    className={`flex items-start gap-3 rounded-lg border p-4 ${getAlertColor(alert.type)}`}
+                  >
+                    {getAlertIcon(alert.type)}
+                    <div className="flex-1">
+                      <p className="font-medium">{alert.title}</p>
+                      <p className="text-sm text-muted-foreground mt-1">{alert.message}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {formatDistanceToNow(new Date(alert.createdAt), { addSuffix: true })}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

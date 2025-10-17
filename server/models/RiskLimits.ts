@@ -39,7 +39,7 @@ const riskLimitsSchema = new Schema<IRiskLimits>(
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
-      unique: true
+      unique: true // unique: true already creates an index, no need for explicit index
     },
     dailyLossLimit: {
       enabled: { type: Boolean, default: true },
@@ -74,8 +74,7 @@ const riskLimitsSchema = new Schema<IRiskLimits>(
   }
 );
 
-// Ensure userId is unique
-riskLimitsSchema.index({ userId: 1 }, { unique: true });
+// Note: No need for explicit userId index as unique: true already creates one
 
 const RiskLimits = mongoose.model<IRiskLimits>('RiskLimits', riskLimitsSchema);
 

@@ -19,12 +19,10 @@ const PortfolioHistorySchema: Schema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
-      index: true,
     },
     date: {
       type: Date,
       required: true,
-      index: true,
     },
     portfolioValue: {
       type: Number,
@@ -54,7 +52,7 @@ const PortfolioHistorySchema: Schema = new Schema(
     },
   },
   {
-    timestamps: true,
+    timestamps: true, // Keep timestamps as these are used for updatedAt tracking
   }
 );
 
