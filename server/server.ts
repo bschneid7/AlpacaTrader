@@ -9,6 +9,7 @@ import riskRoutes from './routes/riskRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
 import monitoringRoutes from './routes/monitoringRoutes';
 import { connectDB } from './config/database';
+import { autoTradingJob } from './jobs/autoTradingJob';
 import cors from 'cors';
 
 // Load environment variables
@@ -66,6 +67,16 @@ app.use((err: Error, req: Request, res: Response) => {
   res.status(500).send("There was an error serving your request.");
 });
 
-app.listen(port, () => {
+app.listen(port, async () => {
   console.log(`Server running at http://localhost:${port}`);
+
+  // Start auto trading background job
+  try {
+    console.log('[Server] Starting auto trading background job...');
+    await autoTradingJob.start();
+    console.log('[Server] Auto trading background job started successfully');
+  } catch (error) {
+    console.error('[Server] Failed to start auto trading job:', error);
+    // Don't exit - server can still run without the trading job
+  }
 });
