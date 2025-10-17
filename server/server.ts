@@ -7,6 +7,7 @@ import alpacaRoutes from './routes/alpacaRoutes';
 import strategyRoutes from './routes/strategyRoutes';
 import riskRoutes from './routes/riskRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
+import monitoringRoutes from './routes/monitoringRoutes';
 import { connectDB } from './config/database';
 import cors from 'cors';
 
@@ -50,6 +51,8 @@ app.use('/api/strategy', strategyRoutes);
 app.use('/api/risk', riskRoutes);
 // Analytics Routes
 app.use('/api/analytics', analyticsRoutes);
+// Monitoring Routes
+app.use('/api/monitoring', monitoringRoutes);
 
 // If no routes handled the request, it's a 404
 app.use((req: Request, res: Response) => {
