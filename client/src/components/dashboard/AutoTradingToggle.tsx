@@ -1,22 +1,40 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Link as LinkIcon } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { toggleAutoTrading } from '@/api/alpaca';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
 interface AutoTradingToggleProps {
   initialEnabled: boolean;
+  isAccountConnected: boolean;
   onToggle: (enabled: boolean) => void;
 }
 
-export function AutoTradingToggle({ initialEnabled, onToggle }: AutoTradingToggleProps) {
+export function AutoTradingToggle({ initialEnabled, isAccountConnected, onToggle }: AutoTradingToggleProps) {
   const [enabled, setEnabled] = useState(initialEnabled);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
+  // Update enabled state when initialEnabled prop changes
+  useEffect(() => {
+    setEnabled(initialEnabled);
+  }, [initialEnabled]);
+
   const handleToggle = async (checked: boolean) => {
+    if (!isAccountConnected) {
+      toast({
+        title: 'Account Not Connected',
+        description: 'Please connect your Alpaca account in Settings to enable auto-trading',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const response = await toggleAutoTrading({ enabled: checked }) as { success: boolean; enabled: boolean };
@@ -25,8 +43,8 @@ export function AutoTradingToggle({ initialEnabled, onToggle }: AutoTradingToggl
         onToggle(response.enabled);
         toast({
           title: response.enabled ? 'Auto-Trading Enabled' : 'Auto-Trading Disabled',
-          description: response.enabled 
-            ? 'Automated trading is now active' 
+          description: response.enabled
+            ? 'Automated trading is now active'
             : 'Switched to manual mode',
         });
       }
@@ -47,18 +65,34 @@ export function AutoTradingToggle({ initialEnabled, onToggle }: AutoTradingToggl
         <CardTitle>Auto-Trading Status</CardTitle>
         <CardDescription>Control automated trading execution</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
+        {!isAccountConnected && (
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Alpaca Account Required</AlertTitle>
+            <AlertDescription className="flex items-center justify-between">
+              <span>Connect your Alpaca account to enable automated trading</span>
+              <Link to="/settings">
+                <Button variant="outline" size="sm" className="ml-2">
+                  <LinkIcon className="h-4 w-4 mr-2" />
+                  Go to Settings
+                </Button>
+              </Link>
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Switch
               id="auto-trading"
               checked={enabled}
               onCheckedChange={handleToggle}
-              disabled={loading}
+              disabled={loading || !isAccountConnected}
             />
             <Label htmlFor="auto-trading" className="cursor-pointer">
               <div className="flex items-center gap-2">
-                {enabled ? (
+                {enabled && isAccountConnected ? (
                   <>
                     <CheckCircle2 className="h-5 w-5 text-green-600" />
                     <span className="font-semibold text-green-600">Automated Trading Active</span>
@@ -66,7 +100,9 @@ export function AutoTradingToggle({ initialEnabled, onToggle }: AutoTradingToggl
                 ) : (
                   <>
                     <AlertCircle className="h-5 w-5 text-orange-600" />
-                    <span className="font-semibold text-orange-600">Manual Mode - No Automated Trades</span>
+                    <span className="font-semibold text-orange-600">
+                      {!isAccountConnected ? 'Account Not Connected' : 'Manual Mode - No Automated Trades'}
+                    </span>
                   </>
                 )}
               </div>

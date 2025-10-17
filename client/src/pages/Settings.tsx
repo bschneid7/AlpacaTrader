@@ -7,9 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/useToast';
 import { getAccountSettings, updateNotificationSettings, disconnectAlpacaAccount } from '@/api/settings';
-import { getAccountStatus } from '@/api/alpaca';
+import { getAccountStatus, connectAlpacaAccount } from '@/api/alpaca';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, Save } from 'lucide-react';
+import { AlertTriangle, Save, Link as LinkIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
@@ -28,6 +28,7 @@ import type { AccountSettings } from '@/types/settings';
 export function Settings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [connecting, setConnecting] = useState(false);
   const [accountInfo, setAccountInfo] = useState<AccountSettings | null>(null);
   const [alpacaStatus, setAlpacaStatus] = useState<{
     isConnected: boolean;
@@ -37,6 +38,12 @@ export function Settings() {
   } | null>(null);
   const [showDisconnect, setShowDisconnect] = useState(false);
   const { toast } = useToast();
+
+  const [connectionForm, setConnectionForm] = useState({
+    apiKey: '',
+    secretKey: '',
+    isPaper: true,
+  });
 
   const [notificationSettings, setNotificationSettings] = useState({
     emailNotifications: true,
@@ -111,6 +118,44 @@ export function Settings() {
     }
   };
 
+  const handleConnect = async () => {
+    if (!connectionForm.apiKey || !connectionForm.secretKey) {
+      toast({
+        title: 'Missing Information',
+        description: 'Please provide both API Key and Secret Key',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setConnecting(true);
+    try {
+      const response = await connectAlpacaAccount(connectionForm) as { success: boolean; accountNumber: string; accountType: string };
+      if (response.success) {
+        toast({
+          title: 'Account Connected',
+          description: `Successfully connected to Alpaca account ${response.accountNumber}`,
+        });
+        // Clear the form
+        setConnectionForm({
+          apiKey: '',
+          secretKey: '',
+          isPaper: true,
+        });
+        // Refresh settings to update the UI
+        fetchSettings();
+      }
+    } catch (error) {
+      toast({
+        title: 'Connection Failed',
+        description: error instanceof Error ? error.message : 'Failed to connect Alpaca account',
+        variant: 'destructive',
+      });
+    } finally {
+      setConnecting(false);
+    }
+  };
+
   const handleDisconnect = async () => {
     try {
       const response = await disconnectAlpacaAccount() as { success: boolean; message: string };
@@ -150,18 +195,73 @@ export function Settings() {
         </div>
 
         {!alpacaStatus?.isConnected ? (
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Alpaca Account Not Connected</AlertTitle>
-            <AlertDescription>
-              Please connect your Alpaca account in the Dashboard to view account details and start trading.
-              <Link to="/dashboard">
-                <Button variant="link" className="px-0 pl-1">
-                  Go to Dashboard
-                </Button>
-              </Link>
-            </AlertDescription>
-          </Alert>
+          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+            <CardHeader>
+              <CardTitle>Connect Alpaca Account</CardTitle>
+              <CardDescription>Enter your Alpaca API credentials to start trading</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Important Information</AlertTitle>
+                <AlertDescription>
+                  You need an Alpaca brokerage account to use this application.
+                  <a
+                    href="https://alpaca.markets"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center text-blue-600 hover:text-blue-700 ml-1"
+                  >
+                    Create an account
+                    <LinkIcon className="h-3 w-3 ml-1" />
+                  </a>
+                </AlertDescription>
+              </Alert>
+
+              <div className="space-y-2">
+                <Label htmlFor="apiKey">API Key</Label>
+                <Input
+                  id="apiKey"
+                  type="text"
+                  placeholder="Enter your Alpaca API Key"
+                  value={connectionForm.apiKey}
+                  onChange={(e) =>
+                    setConnectionForm({ ...connectionForm, apiKey: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="secretKey">Secret Key</Label>
+                <Input
+                  id="secretKey"
+                  type="password"
+                  placeholder="Enter your Alpaca Secret Key"
+                  value={connectionForm.secretKey}
+                  onChange={(e) =>
+                    setConnectionForm({ ...connectionForm, secretKey: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Paper Trading Mode</Label>
+                  <p className="text-xs text-muted-foreground">Use test account for practice (recommended)</p>
+                </div>
+                <Switch
+                  checked={connectionForm.isPaper}
+                  onCheckedChange={(checked) =>
+                    setConnectionForm({ ...connectionForm, isPaper: checked })
+                  }
+                />
+              </div>
+
+              <Button onClick={handleConnect} disabled={connecting} className="w-full">
+                {connecting ? 'Connecting...' : 'Connect Account'}
+              </Button>
+            </CardContent>
+          </Card>
         ) : (
           <Card className="bg-card/50 backdrop-blur-sm border-border/50">
             <CardHeader>
