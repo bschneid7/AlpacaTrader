@@ -2,6 +2,7 @@ import axios, { AxiosInstance } from 'axios';
 import AlpacaAccount, { IAlpacaAccount } from '../models/AlpacaAccount';
 import Position from '../models/Position';
 import TradingPreferences from '../models/TradingPreferences';
+import Trade from '../models/Trade';
 import mongoose from 'mongoose';
 
 interface AlpacaAccountInfo {
@@ -579,6 +580,144 @@ class AlpacaService {
         lastToggleTime: null,
         isAccountConnected: false
       };
+    }
+  }
+
+  /**
+   * Get recent trades (last 20 trades)
+   */
+  async getRecentTrades(userId: string): Promise<Array<{
+    id: string;
+    symbol: string;
+    side: string;
+    quantity: number;
+    price: number;
+    time: Date;
+    profitLoss?: number;
+    status: string;
+  }>> {
+    try {
+      console.log(`Fetching recent trades for user: ${userId}`);
+
+      const trades = await Trade.find({
+        userId: new mongoose.Types.ObjectId(userId)
+      })
+        .sort({ createdAt: -1 })
+        .limit(20)
+        .lean();
+
+      console.log(`Found ${trades.length} recent trades for user: ${userId}`);
+
+      return trades.map(trade => ({
+        id: trade._id.toString(),
+        symbol: trade.symbol,
+        side: trade.side,
+        quantity: trade.filledQuantity,
+        price: trade.averagePrice,
+        time: trade.entryTime,
+        profitLoss: trade.profitLoss,
+        status: trade.status
+      }));
+    } catch (error: unknown) {
+      console.error('Error fetching recent trades:', error);
+      throw new Error('Failed to fetch recent trades');
+    }
+  }
+
+  /**
+   * Get trade history with optional filtering
+   */
+  async getTradeHistory(
+    userId: string,
+    options: {
+      startDate?: Date;
+      endDate?: Date;
+      symbol?: string;
+      status?: string;
+      limit?: number;
+      offset?: number;
+    } = {}
+  ): Promise<{
+    trades: Array<{
+      id: string;
+      symbol: string;
+      side: string;
+      quantity: number;
+      entryPrice: number;
+      exitPrice?: number;
+      entryTime: Date;
+      exitTime?: Date;
+      duration?: number;
+      profitLoss?: number;
+      profitLossPercentage?: number;
+      status: string;
+    }>;
+    total: number;
+    hasMore: boolean;
+  }> {
+    try {
+      console.log(`Fetching trade history for user: ${userId}`, options);
+
+      const { startDate, endDate, symbol, status, limit = 50, offset = 0 } = options;
+
+      // Build query
+      const query: Record<string, unknown> = {
+        userId: new mongoose.Types.ObjectId(userId)
+      };
+
+      if (startDate || endDate) {
+        query.entryTime = {};
+        if (startDate) {
+          (query.entryTime as Record<string, unknown>).$gte = startDate;
+        }
+        if (endDate) {
+          (query.entryTime as Record<string, unknown>).$lte = endDate;
+        }
+      }
+
+      if (symbol) {
+        query.symbol = symbol.toUpperCase();
+      }
+
+      if (status) {
+        query.status = status;
+      }
+
+      // Get total count
+      const total = await Trade.countDocuments(query);
+
+      // Get trades
+      const trades = await Trade.find(query)
+        .sort({ entryTime: -1 })
+        .skip(offset)
+        .limit(limit)
+        .lean();
+
+      console.log(`Found ${trades.length} trades (total: ${total}) for user: ${userId}`);
+
+      const hasMore = offset + trades.length < total;
+
+      return {
+        trades: trades.map(trade => ({
+          id: trade._id.toString(),
+          symbol: trade.symbol,
+          side: trade.side,
+          quantity: trade.filledQuantity,
+          entryPrice: trade.entryPrice,
+          exitPrice: trade.exitPrice,
+          entryTime: trade.entryTime,
+          exitTime: trade.exitTime,
+          duration: trade.duration,
+          profitLoss: trade.profitLoss,
+          profitLossPercentage: trade.profitLossPercentage,
+          status: trade.status
+        })),
+        total,
+        hasMore
+      };
+    } catch (error: unknown) {
+      console.error('Error fetching trade history:', error);
+      throw new Error('Failed to fetch trade history');
     }
   }
 }

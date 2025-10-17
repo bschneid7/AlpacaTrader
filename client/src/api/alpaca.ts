@@ -101,32 +101,16 @@ export const closePosition = async (data: { symbol: string }) => {
 // Description: Get Recent Trades
 // Endpoint: GET /api/alpaca/trades/recent
 // Request: {}
-// Response: { trades: Array<{ time: string, symbol: string, action: string, quantity: number, price: number, pl: number }> }
-export const getRecentTrades = () => {
-  // Mocking the response - This will be implemented in a future task
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        trades: [
-          { time: '2024-01-15T14:32:00Z', symbol: 'GOOGL', action: 'SELL', quantity: 15, price: 142.30, pl: 234.50 },
-          { time: '2024-01-15T13:45:00Z', symbol: 'AMZN', action: 'BUY', quantity: 20, price: 155.80, pl: 0 },
-          { time: '2024-01-15T11:20:00Z', symbol: 'META', action: 'SELL', quantity: 10, price: 378.90, pl: -45.20 },
-          { time: '2024-01-15T10:15:00Z', symbol: 'NFLX', action: 'BUY', quantity: 8, price: 485.60, pl: 0 },
-          { time: '2024-01-14T15:50:00Z', symbol: 'AMD', action: 'SELL', quantity: 35, price: 148.20, pl: 567.80 },
-          { time: '2024-01-14T14:30:00Z', symbol: 'INTC', action: 'BUY', quantity: 50, price: 43.50, pl: 0 },
-          { time: '2024-01-14T12:10:00Z', symbol: 'ORCL', action: 'SELL', quantity: 25, price: 108.90, pl: 123.45 },
-          { time: '2024-01-14T10:05:00Z', symbol: 'CRM', action: 'BUY', quantity: 12, price: 265.30, pl: 0 }
-        ]
-      });
-    }, 500);
-  });
-  // try {
-  //   const response = await api.get('/api/alpaca/trades/recent');
-  //   return response.data;
-  // } catch (error: any) {
-  //   console.error(error);
-  //   throw new Error(error?.response?.data?.error || error.message);
-  // }
+// Response: { trades: Array<{ id: string, symbol: string, side: string, quantity: number, price: number, time: string, profitLoss?: number, status: string }> }
+export const getRecentTrades = async () => {
+  try {
+    const response = await api.get('/api/alpaca/trades/recent');
+    return response.data;
+  } catch (error: unknown) {
+    console.error(error);
+    const err = error as { response?: { data?: { error?: string } }; message?: string };
+    throw new Error(err?.response?.data?.error || err.message || 'Unknown error');
+  }
 };
 
 // Description: Toggle Auto Trading
@@ -151,6 +135,28 @@ export const toggleAutoTrading = async (data: { enabled: boolean }) => {
 export const getAutoTradingStatus = async () => {
   try {
     const response = await api.get('/api/alpaca/auto-trading/status');
+    return response.data;
+  } catch (error: unknown) {
+    console.error(error);
+    const err = error as { response?: { data?: { error?: string } }; message?: string };
+    throw new Error(err?.response?.data?.error || err.message || 'Unknown error');
+  }
+};
+
+// Description: Get Trade History
+// Endpoint: GET /api/alpaca/trades/history
+// Request: { startDate?: string, endDate?: string, symbol?: string, status?: string, limit?: number, offset?: number }
+// Response: { trades: Array<{ id: string, symbol: string, side: string, quantity: number, entryPrice: number, exitPrice?: number, entryTime: string, exitTime?: string, duration?: number, profitLoss?: number, profitLossPercentage?: number, status: string }>, total: number, hasMore: boolean }
+export const getTradeHistory = async (params?: {
+  startDate?: string;
+  endDate?: string;
+  symbol?: string;
+  status?: string;
+  limit?: number;
+  offset?: number;
+}) => {
+  try {
+    const response = await api.get('/api/alpaca/trades/history', { params });
     return response.data;
   } catch (error: unknown) {
     console.error(error);

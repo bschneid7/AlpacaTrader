@@ -4,12 +4,14 @@ import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 
 interface Trade {
+  id: string;
   time: string;
   symbol: string;
-  action: string;
+  side: string;
   quantity: number;
   price: number;
-  pl: number;
+  profitLoss?: number;
+  status: string;
 }
 
 interface RecentTradesProps {
@@ -26,34 +28,40 @@ export function RecentTrades({ trades }: RecentTradesProps) {
       <CardContent>
         <ScrollArea className="h-[400px] pr-4">
           <div className="space-y-3">
-            {trades.map((trade, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between rounded-lg border bg-card p-3 hover:bg-accent/50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <Badge variant={trade.action === 'BUY' ? 'default' : 'secondary'}>
-                    {trade.action}
-                  </Badge>
-                  <div>
-                    <p className="font-semibold">{trade.symbol}</p>
+            {trades.length === 0 ? (
+              <div className="text-center text-muted-foreground py-8">
+                No trades yet. Start trading to see your history.
+              </div>
+            ) : (
+              trades.map((trade) => (
+                <div
+                  key={trade.id}
+                  className="flex items-center justify-between rounded-lg border bg-card p-3 hover:bg-accent/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Badge variant={trade.side.toUpperCase() === 'BUY' ? 'default' : 'secondary'}>
+                      {trade.side.toUpperCase()}
+                    </Badge>
+                    <div>
+                      <p className="font-semibold">{trade.symbol}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {trade.quantity} shares @ ${trade.price.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    {trade.profitLoss !== undefined && trade.profitLoss !== 0 && (
+                      <p className={`font-semibold ${trade.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {trade.profitLoss >= 0 ? '+' : ''}${trade.profitLoss.toFixed(2)}
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground">
-                      {trade.quantity} shares @ ${trade.price.toFixed(2)}
+                      {formatDistanceToNow(new Date(trade.time), { addSuffix: true })}
                     </p>
                   </div>
                 </div>
-                <div className="text-right">
-                  {trade.pl !== 0 && (
-                    <p className={`font-semibold ${trade.pl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {trade.pl >= 0 ? '+' : ''}${trade.pl.toFixed(2)}
-                    </p>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(trade.time), { addSuffix: true })}
-                  </p>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </ScrollArea>
       </CardContent>

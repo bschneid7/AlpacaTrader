@@ -279,4 +279,91 @@ router.post('/positions/:symbol/close', requireUser(), async (req: AuthRequest, 
   }
 });
 
+// Description: Get Recent Trades (last 20 trades)
+// Endpoint: GET /api/alpaca/trades/recent
+// Request: {}
+// Response: { trades: Array<{ id: string, symbol: string, side: string, quantity: number, price: number, time: string, profitLoss?: number, status: string }> }
+router.get('/trades/recent', requireUser(), async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    console.log(`Fetching recent trades for user: ${req.user.email}`);
+
+    const trades = await AlpacaService.getRecentTrades(req.user._id);
+
+    res.status(200).json({ trades });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error(`Error fetching recent trades: ${error.message}`);
+      res.status(400).json({ error: error.message });
+    } else {
+      console.error('Unknown error fetching recent trades');
+      res.status(500).json({ error: 'Failed to fetch recent trades' });
+    }
+  }
+});
+
+// Description: Get Trade History with filtering
+// Endpoint: GET /api/alpaca/trades/history
+// Request: { startDate?: string, endDate?: string, symbol?: string, status?: string, limit?: number, offset?: number }
+// Response: { trades: Array<{ id: string, symbol: string, side: string, quantity: number, entryPrice: number, exitPrice?: number, entryTime: string, exitTime?: string, duration?: number, profitLoss?: number, profitLossPercentage?: number, status: string }>, total: number, hasMore: boolean }
+router.get('/trades/history', requireUser(), async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    console.log(`Fetching trade history for user: ${req.user.email}`);
+
+    const { startDate, endDate, symbol, status, limit, offset } = req.query;
+
+    const options: {
+      startDate?: Date;
+      endDate?: Date;
+      symbol?: string;
+      status?: string;
+      limit?: number;
+      offset?: number;
+    } = {};
+
+    if (startDate && typeof startDate === 'string') {
+      options.startDate = new Date(startDate);
+    }
+
+    if (endDate && typeof endDate === 'string') {
+      options.endDate = new Date(endDate);
+    }
+
+    if (symbol && typeof symbol === 'string') {
+      options.symbol = symbol;
+    }
+
+    if (status && typeof status === 'string') {
+      options.status = status;
+    }
+
+    if (limit && typeof limit === 'string') {
+      options.limit = parseInt(limit, 10);
+    }
+
+    if (offset && typeof offset === 'string') {
+      options.offset = parseInt(offset, 10);
+    }
+
+    const result = await AlpacaService.getTradeHistory(req.user._id, options);
+
+    res.status(200).json(result);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error(`Error fetching trade history: ${error.message}`);
+      res.status(400).json({ error: error.message });
+    } else {
+      console.error('Unknown error fetching trade history');
+      res.status(500).json({ error: 'Failed to fetch trade history' });
+    }
+  }
+});
+
 export default router;
