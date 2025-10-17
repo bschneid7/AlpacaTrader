@@ -24,9 +24,13 @@ export const getAccountOverview = async () => {
     const response = await api.get('/api/alpaca/account');
     return response.data;
   } catch (error: unknown) {
-    console.error(error);
     const err = error as { response?: { data?: { error?: string } }; message?: string };
-    throw new Error(err?.response?.data?.error || err.message || 'Unknown error');
+    const errorMessage = err?.response?.data?.error || err.message || 'Unknown error';
+    // Only log if it's not the expected "account not connected" error
+    if (errorMessage !== 'Alpaca account not connected') {
+      console.error(error);
+    }
+    throw new Error(errorMessage);
   }
 };
 
@@ -39,9 +43,13 @@ export const getCurrentPositions = async () => {
     const response = await api.get('/api/alpaca/positions');
     return response.data;
   } catch (error: unknown) {
-    console.error(error);
     const err = error as { response?: { data?: { error?: string } }; message?: string };
-    throw new Error(err?.response?.data?.error || err.message || 'Unknown error');
+    const errorMessage = err?.response?.data?.error || err.message || 'Unknown error';
+    // Only log if it's not the expected "account not connected" error
+    if (errorMessage !== 'Alpaca account not connected') {
+      console.error(error);
+    }
+    throw new Error(errorMessage);
   }
 };
 

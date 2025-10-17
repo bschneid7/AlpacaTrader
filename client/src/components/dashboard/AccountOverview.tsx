@@ -1,6 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, DollarSign, Target, Wallet } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, Target, Wallet, AlertCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
 interface AccountOverviewProps {
   data?: {
@@ -24,6 +27,24 @@ export function AccountOverview({ data }: AccountOverviewProps) {
 
   const monthlyTarget = 9;
   const targetProgress = (monthlyPLPercent / monthlyTarget) * 100;
+
+  // Show message when account is not connected
+  if (!data) {
+    return (
+      <Alert>
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Alpaca Account Not Connected</AlertTitle>
+        <AlertDescription>
+          Please connect your Alpaca account to view your portfolio data and start trading.
+          <Link to="/settings">
+            <Button variant="link" className="px-0 pl-1">
+              Go to Settings
+            </Button>
+          </Link>
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
