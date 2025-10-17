@@ -48,7 +48,7 @@ export function Settings() {
   const [notificationSettings, setNotificationSettings] = useState({
     emailNotifications: true,
     email: '',
-    alertFrequency: 'Immediate',
+    alertFrequency: 'immediate',
   });
 
   const fetchSettings = useCallback(async () => {
@@ -344,9 +344,9 @@ export function Settings() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Immediate">Immediate</SelectItem>
-                      <SelectItem value="Hourly">Hourly Digest</SelectItem>
-                      <SelectItem value="Daily">Daily Summary</SelectItem>
+                      <SelectItem value="immediate">Immediate</SelectItem>
+                      <SelectItem value="hourly">Hourly Digest</SelectItem>
+                      <SelectItem value="daily">Daily Summary</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
