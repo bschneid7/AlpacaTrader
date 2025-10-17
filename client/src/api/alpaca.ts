@@ -2,107 +2,72 @@ import api from './api';
 
 // Description: Connect Alpaca Account
 // Endpoint: POST /api/alpaca/connect
-// Request: { apiKey: string, secretKey: string }
+// Request: { apiKey: string, secretKey: string, isPaper?: boolean }
 // Response: { success: boolean, accountNumber: string, accountType: string, buyingPower: number }
-export const connectAlpacaAccount = (data: { apiKey: string; secretKey: string }) => {
-  // Mocking the response
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        success: true,
-        accountNumber: 'ACC123456789',
-        accountType: 'Margin',
-        buyingPower: 25000.00
-      });
-    }, 1000);
-  });
-  // try {
-  //   return await api.post('/api/alpaca/connect', data);
-  // } catch (error) {
-  //   throw new Error(error?.response?.data?.message || error.message);
-  // }
+export const connectAlpacaAccount = async (data: { apiKey: string; secretKey: string; isPaper?: boolean }) => {
+  try {
+    const response = await api.post('/api/alpaca/connect', data);
+    return response.data;
+  } catch (error: any) {
+    console.error(error);
+    throw new Error(error?.response?.data?.error || error.message);
+  }
 };
 
 // Description: Get Account Overview
 // Endpoint: GET /api/alpaca/account
 // Request: {}
-// Response: { portfolioValue: number, todayPL: number, todayPLPercent: number, monthlyPL: number, monthlyPLPercent: number, cashAvailable: number }
-export const getAccountOverview = () => {
-  // Mocking the response
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        portfolioValue: 127543.82,
-        todayPL: 1234.56,
-        todayPLPercent: 0.98,
-        monthlyPL: 8543.21,
-        monthlyPLPercent: 7.2,
-        cashAvailable: 15234.50
-      });
-    }, 500);
-  });
-  // try {
-  //   return await api.get('/api/alpaca/account');
-  // } catch (error) {
-  //   throw new Error(error?.response?.data?.message || error.message);
-  // }
+// Response: { portfolioValue: number, todayPL: number, todayPLPercent: number, cashAvailable: number, buyingPower: number, accountNumber: string, accountType: string }
+export const getAccountOverview = async () => {
+  try {
+    const response = await api.get('/api/alpaca/account');
+    return response.data;
+  } catch (error: any) {
+    console.error(error);
+    throw new Error(error?.response?.data?.error || error.message);
+  }
 };
 
 // Description: Get Current Positions
 // Endpoint: GET /api/alpaca/positions
 // Request: {}
 // Response: { positions: Array<{ symbol: string, quantity: number, entryPrice: number, currentPrice: number, unrealizedPL: number, unrealizedPLPercent: number, positionSize: number }> }
-export const getCurrentPositions = () => {
-  // Mocking the response
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        positions: [
-          {
-            symbol: 'AAPL',
-            quantity: 50,
-            entryPrice: 178.50,
-            currentPrice: 182.30,
-            unrealizedPL: 190.00,
-            unrealizedPLPercent: 2.13,
-            positionSize: 7.15
-          },
-          {
-            symbol: 'TSLA',
-            quantity: 25,
-            entryPrice: 245.80,
-            currentPrice: 238.90,
-            unrealizedPL: -172.50,
-            unrealizedPLPercent: -2.81,
-            positionSize: 4.68
-          },
-          {
-            symbol: 'MSFT',
-            quantity: 40,
-            entryPrice: 368.20,
-            currentPrice: 375.60,
-            unrealizedPL: 296.00,
-            unrealizedPLPercent: 2.01,
-            positionSize: 11.77
-          },
-          {
-            symbol: 'NVDA',
-            quantity: 30,
-            entryPrice: 485.30,
-            currentPrice: 492.10,
-            unrealizedPL: 204.00,
-            unrealizedPLPercent: 1.40,
-            positionSize: 11.56
-          }
-        ]
-      });
-    }, 500);
-  });
-  // try {
-  //   return await api.get('/api/alpaca/positions');
-  // } catch (error) {
-  //   throw new Error(error?.response?.data?.message || error.message);
-  // }
+export const getCurrentPositions = async () => {
+  try {
+    const response = await api.get('/api/alpaca/positions');
+    return response.data;
+  } catch (error: any) {
+    console.error(error);
+    throw new Error(error?.response?.data?.error || error.message);
+  }
+};
+
+// Description: Disconnect Alpaca Account
+// Endpoint: DELETE /api/alpaca/disconnect
+// Request: {}
+// Response: { success: boolean, message: string }
+export const disconnectAlpacaAccount = async () => {
+  try {
+    const response = await api.delete('/api/alpaca/disconnect');
+    return response.data;
+  } catch (error: any) {
+    console.error(error);
+    throw new Error(error?.response?.data?.error || error.message);
+  }
+};
+
+// Description: Get Account Connection Status
+// Endpoint: GET /api/alpaca/status
+// Request: {}
+// Response: { isConnected: boolean, accountNumber?: string, accountType?: string, isPaperTrading?: boolean }
+export const getAccountStatus = async () => {
+  try {
+    const response = await api.get('/api/alpaca/status');
+    return response.data;
+  } catch (error: any) {
+    console.error(error);
+    throw new Error(error?.response?.data?.error || error.message);
+  }
 };
 
 // Description: Close Position
@@ -110,7 +75,7 @@ export const getCurrentPositions = () => {
 // Request: { symbol: string }
 // Response: { success: boolean, message: string, orderId: string }
 export const closePosition = (data: { symbol: string }) => {
-  // Mocking the response
+  // Mocking the response - This will be implemented in a future task
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve({
@@ -121,9 +86,11 @@ export const closePosition = (data: { symbol: string }) => {
     }, 800);
   });
   // try {
-  //   return await api.post('/api/alpaca/positions/close', data);
-  // } catch (error) {
-  //   throw new Error(error?.response?.data?.message || error.message);
+  //   const response = await api.post('/api/alpaca/positions/close', data);
+  //   return response.data;
+  // } catch (error: any) {
+  //   console.error(error);
+  //   throw new Error(error?.response?.data?.error || error.message);
   // }
 };
 
@@ -132,7 +99,7 @@ export const closePosition = (data: { symbol: string }) => {
 // Request: {}
 // Response: { trades: Array<{ time: string, symbol: string, action: string, quantity: number, price: number, pl: number }> }
 export const getRecentTrades = () => {
-  // Mocking the response
+  // Mocking the response - This will be implemented in a future task
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve({
@@ -150,9 +117,11 @@ export const getRecentTrades = () => {
     }, 500);
   });
   // try {
-  //   return await api.get('/api/alpaca/trades/recent');
-  // } catch (error) {
-  //   throw new Error(error?.response?.data?.message || error.message);
+  //   const response = await api.get('/api/alpaca/trades/recent');
+  //   return response.data;
+  // } catch (error: any) {
+  //   console.error(error);
+  //   throw new Error(error?.response?.data?.error || error.message);
   // }
 };
 
@@ -160,41 +129,28 @@ export const getRecentTrades = () => {
 // Endpoint: POST /api/alpaca/auto-trading/toggle
 // Request: { enabled: boolean }
 // Response: { success: boolean, enabled: boolean }
-export const toggleAutoTrading = (data: { enabled: boolean }) => {
-  // Mocking the response
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        success: true,
-        enabled: data.enabled
-      });
-    }, 500);
-  });
-  // try {
-  //   return await api.post('/api/alpaca/auto-trading/toggle', data);
-  // } catch (error) {
-  //   throw new Error(error?.response?.data?.message || error.message);
-  // }
+export const toggleAutoTrading = async (data: { enabled: boolean }) => {
+  try {
+    const response = await api.post('/api/alpaca/auto-trading/toggle', data);
+    return response.data;
+  } catch (error: any) {
+    console.error(error);
+    throw new Error(error?.response?.data?.error || error.message);
+  }
 };
 
 // Description: Get Auto Trading Status
 // Endpoint: GET /api/alpaca/auto-trading/status
 // Request: {}
 // Response: { enabled: boolean }
-export const getAutoTradingStatus = () => {
-  // Mocking the response
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        enabled: true
-      });
-    }, 300);
-  });
-  // try {
-  //   return await api.get('/api/alpaca/auto-trading/status');
-  // } catch (error) {
-  //   throw new Error(error?.response?.data?.message || error.message);
-  // }
+export const getAutoTradingStatus = async () => {
+  try {
+    const response = await api.get('/api/alpaca/auto-trading/status');
+    return response.data;
+  } catch (error: any) {
+    console.error(error);
+    throw new Error(error?.response?.data?.error || error.message);
+  }
 };
 
 // Description: Get Strategy Performance Metrics
@@ -202,7 +158,7 @@ export const getAutoTradingStatus = () => {
 // Request: {}
 // Response: { winRate: number, avgTradeDuration: string, riskExposure: number }
 export const getStrategyPerformance = () => {
-  // Mocking the response
+  // Mocking the response - This will be implemented in a future task
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve({
@@ -213,8 +169,10 @@ export const getStrategyPerformance = () => {
     }, 500);
   });
   // try {
-  //   return await api.get('/api/alpaca/strategy/performance');
-  // } catch (error) {
-  //   throw new Error(error?.response?.data?.message || error.message);
+  //   const response = await api.get('/api/alpaca/strategy/performance');
+  //   return response.data;
+  // } catch (error: any) {
+  //   console.error(error);
+  //   throw new Error(error?.response?.data?.error || error.message);
   // }
 };

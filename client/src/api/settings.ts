@@ -5,7 +5,7 @@ import api from './api';
 // Request: {}
 // Response: { accountNumber: string, accountType: string, accountStatus: string, emailNotifications: boolean, email: string, alertFrequency: string }
 export const getAccountSettings = () => {
-  // Mocking the response
+  // Mocking the response - This will be implemented in a future task
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve({
@@ -19,9 +19,11 @@ export const getAccountSettings = () => {
     }, 500);
   });
   // try {
-  //   return await api.get('/api/settings/account');
-  // } catch (error) {
-  //   throw new Error(error?.response?.data?.message || error.message);
+  //   const response = await api.get('/api/settings/account');
+  //   return response.data;
+  // } catch (error: any) {
+  //   console.error(error);
+  //   throw new Error(error?.response?.data?.error || error.message);
   // }
 };
 
@@ -34,7 +36,7 @@ export const updateNotificationSettings = (data: {
   email: string;
   alertFrequency: string;
 }) => {
-  // Mocking the response
+  // Mocking the response - This will be implemented in a future task
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve({
@@ -44,29 +46,24 @@ export const updateNotificationSettings = (data: {
     }, 500);
   });
   // try {
-  //   return await api.put('/api/settings/notifications', data);
-  // } catch (error) {
-  //   throw new Error(error?.response?.data?.message || error.message);
+  //   const response = await api.put('/api/settings/notifications', data);
+  //   return response.data;
+  // } catch (error: any) {
+  //   console.error(error);
+  //   throw new Error(error?.response?.data?.error || error.message);
   // }
 };
 
 // Description: Disconnect Alpaca Account
-// Endpoint: POST /api/settings/disconnect
+// Endpoint: DELETE /api/alpaca/disconnect
 // Request: {}
 // Response: { success: boolean, message: string }
-export const disconnectAlpacaAccount = () => {
-  // Mocking the response
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        success: true,
-        message: 'Alpaca account disconnected successfully'
-      });
-    }, 500);
-  });
-  // try {
-  //   return await api.post('/api/settings/disconnect');
-  // } catch (error) {
-  //   throw new Error(error?.response?.data?.message || error.message);
-  // }
+export const disconnectAlpacaAccount = async () => {
+  try {
+    const response = await api.delete('/api/alpaca/disconnect');
+    return response.data;
+  } catch (error: any) {
+    console.error(error);
+    throw new Error(error?.response?.data?.error || error.message);
+  }
 };
