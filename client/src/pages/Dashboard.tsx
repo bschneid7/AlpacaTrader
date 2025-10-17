@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { AccountOverview } from '@/components/dashboard/AccountOverview';
 import { AutoTradingToggle } from '@/components/dashboard/AutoTradingToggle';
 import { CurrentPositions } from '@/components/dashboard/CurrentPositions';
@@ -13,17 +13,18 @@ import {
   getStrategyPerformance,
 } from '@/api/alpaca';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { AccountData, Position, RecentTrade, StrategyPerformance as StrategyPerformanceType } from '@/types/dashboard';
 
 export function Dashboard() {
   const [loading, setLoading] = useState(true);
-  const [accountData, setAccountData] = useState<any>(null);
-  const [positions, setPositions] = useState<any[]>([]);
-  const [trades, setTrades] = useState<any[]>([]);
+  const [accountData, setAccountData] = useState<AccountData | null>(null);
+  const [positions, setPositions] = useState<Position[]>([]);
+  const [trades, setTrades] = useState<RecentTrade[]>([]);
   const [autoTradingEnabled, setAutoTradingEnabled] = useState(false);
-  const [performance, setPerformance] = useState<any>(null);
+  const [performance, setPerformance] = useState<StrategyPerformanceType | null>(null);
   const { toast } = useToast();
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [accountRes, positionsRes, tradesRes, statusRes, performanceRes] = await Promise.all([
         getAccountOverview(),
@@ -33,11 +34,11 @@ export function Dashboard() {
         getStrategyPerformance(),
       ]);
 
-      setAccountData(accountRes);
-      setPositions((positionsRes as any).positions);
-      setTrades((tradesRes as any).trades);
-      setAutoTradingEnabled((statusRes as any).enabled);
-      setPerformance(performanceRes);
+      setAccountData(accountRes as AccountData);
+      setPositions((positionsRes as { positions: Position[] }).positions);
+      setTrades((tradesRes as { trades: RecentTrade[] }).trades);
+      setAutoTradingEnabled((statusRes as { enabled: boolean }).enabled);
+      setPerformance(performanceRes as StrategyPerformanceType);
     } catch (error) {
       toast({
         title: 'Error',
@@ -47,7 +48,7 @@ export function Dashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     console.log('Dashboard: Fetching initial data');
@@ -60,7 +61,7 @@ export function Dashboard() {
     }, 30000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchData]);
 
   if (loading) {
     return (

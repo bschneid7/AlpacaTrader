@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
@@ -19,6 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import type { StrategyConfig } from '@/types/strategy';
 
 const SECTORS = ['Technology', 'Healthcare', 'Finance', 'Consumer', 'Energy', 'Industrial', 'Materials', 'Utilities'];
 const MARKET_CAPS = ['Large', 'Mid', 'Small'];
@@ -30,7 +31,7 @@ export function Strategy() {
   const [showReset, setShowReset] = useState(false);
   const { toast } = useToast();
 
-  const [config, setConfig] = useState({
+  const [config, setConfig] = useState<StrategyConfig>({
     maxPositionSize: 15,
     maxConcurrentPositions: 8,
     stopLoss: 5,
@@ -40,29 +41,29 @@ export function Strategy() {
     afterHours: false,
     minStockPrice: 10,
     minDailyVolume: 1000000,
-    marketCaps: ['Large', 'Mid'] as string[],
-    sectors: ['Technology', 'Healthcare', 'Finance'] as string[],
+    marketCaps: ['Large', 'Mid'],
+    sectors: ['Technology', 'Healthcare', 'Finance'],
   });
+
+  const fetchConfig = useCallback(async () => {
+    try {
+      const data = await getStrategyConfig() as StrategyConfig;
+      setConfig(data);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to fetch strategy configuration',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
 
   useEffect(() => {
     console.log('Strategy: Fetching configuration');
-    const fetchConfig = async () => {
-      try {
-        const data = await getStrategyConfig() as any;
-        setConfig(data);
-      } catch (error) {
-        toast({
-          title: 'Error',
-          description: error instanceof Error ? error.message : 'Failed to fetch strategy configuration',
-          variant: 'destructive',
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchConfig();
-  }, []);
+  }, [fetchConfig]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -94,7 +95,7 @@ export function Strategy() {
           title: 'Success',
           description: response.message,
         });
-        const data = await getStrategyConfig() as any;
+        const data = await getStrategyConfig() as StrategyConfig;
         setConfig(data);
         setShowReset(false);
       }
