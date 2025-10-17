@@ -8,13 +8,13 @@ import TradingPreferences from '../models/TradingPreferences.js';
 import { connectDB } from '../config/database.js';
 
 interface JobConfig {
-  intervalMinutes: number;
+  intervalSeconds: number;
   isRunning: boolean;
   intervalId?: NodeJS.Timeout;
 }
 
 const jobConfig: JobConfig = {
-  intervalMinutes: 5, // Run every 5 minutes
+  intervalSeconds: 30, // Run every 30 seconds
   isRunning: false,
   intervalId: undefined
 };
@@ -71,7 +71,7 @@ export async function startAutoTradingJob(): Promise<void> {
     }
 
     console.log('[Auto Trading Job] Starting auto trading job...');
-    console.log(`[Auto Trading Job] Interval: ${jobConfig.intervalMinutes} minutes`);
+    console.log(`[Auto Trading Job] Interval: ${jobConfig.intervalSeconds} seconds`);
 
     // Ensure database is connected
     await connectDB();
@@ -80,7 +80,7 @@ export async function startAutoTradingJob(): Promise<void> {
     await executeTradingCycle();
 
     // Schedule recurring execution
-    const intervalMs = jobConfig.intervalMinutes * 60 * 1000;
+    const intervalMs = jobConfig.intervalSeconds * 1000;
     jobConfig.intervalId = setInterval(async () => {
       await executeTradingCycle();
     }, intervalMs);
@@ -121,20 +121,20 @@ export function stopAutoTradingJob(): void {
  */
 export function getJobStatus(): {
   isRunning: boolean;
-  intervalMinutes: number;
+  intervalSeconds: number;
 } {
   return {
     isRunning: jobConfig.isRunning,
-    intervalMinutes: jobConfig.intervalMinutes
+    intervalSeconds: jobConfig.intervalSeconds
   };
 }
 
 /**
  * Update job interval (requires restart)
  */
-export function setJobInterval(minutes: number): void {
-  if (minutes < 1) {
-    throw new Error('Interval must be at least 1 minute');
+export function setJobInterval(seconds: number): void {
+  if (seconds < 10) {
+    throw new Error('Interval must be at least 10 seconds');
   }
 
   const wasRunning = jobConfig.isRunning;
@@ -143,8 +143,8 @@ export function setJobInterval(minutes: number): void {
     stopAutoTradingJob();
   }
 
-  jobConfig.intervalMinutes = minutes;
-  console.log(`[Auto Trading Job] Interval updated to ${minutes} minutes`);
+  jobConfig.intervalSeconds = seconds;
+  console.log(`[Auto Trading Job] Interval updated to ${seconds} seconds`);
 
   if (wasRunning) {
     startAutoTradingJob();
