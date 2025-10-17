@@ -27,28 +27,25 @@ export function Dashboard() {
   const fetchData = useCallback(async () => {
     try {
       const [accountRes, positionsRes, tradesRes, statusRes, performanceRes] = await Promise.all([
-        getAccountOverview(),
-        getCurrentPositions(),
-        getRecentTrades(),
-        getAutoTradingStatus(),
-        getStrategyPerformance(),
+        getAccountOverview().catch(() => null),
+        getCurrentPositions().catch(() => ({ positions: [] })),
+        getRecentTrades().catch(() => ({ trades: [] })),
+        getAutoTradingStatus().catch(() => ({ enabled: false })),
+        getStrategyPerformance().catch(() => null),
       ]);
 
-      setAccountData(accountRes as AccountData);
-      setPositions((positionsRes as { positions: Position[] }).positions);
-      setTrades((tradesRes as { trades: RecentTrade[] }).trades);
-      setAutoTradingEnabled((statusRes as { enabled: boolean }).enabled);
-      setPerformance(performanceRes as StrategyPerformanceType);
+      setAccountData(accountRes as AccountData | null);
+      setPositions((positionsRes as { positions: Position[] })?.positions || []);
+      setTrades((tradesRes as { trades: RecentTrade[] })?.trades || []);
+      setAutoTradingEnabled((statusRes as { enabled: boolean })?.enabled || false);
+      setPerformance(performanceRes as StrategyPerformanceType | null);
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to fetch dashboard data',
-        variant: 'destructive',
-      });
+      console.error('Dashboard error:', error);
+      // Don't show error toast - just use default values
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     console.log('Dashboard: Fetching initial data');

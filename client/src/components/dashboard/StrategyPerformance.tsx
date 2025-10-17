@@ -3,14 +3,19 @@ import { Progress } from '@/components/ui/progress';
 import { Award, Clock, AlertTriangle } from 'lucide-react';
 
 interface StrategyPerformanceProps {
-  data: {
+  data?: {
     winRate: number;
     avgTradeDuration: string;
     riskExposure: number;
-  };
+  } | null;
 }
 
 export function StrategyPerformance({ data }: StrategyPerformanceProps) {
+  // Provide default values when data is not available
+  const winRate = data?.winRate ?? 0;
+  const avgTradeDuration = data?.avgTradeDuration ?? '0 days';
+  const riskExposure = data?.riskExposure ?? 0;
+
   const getRiskColor = (risk: number) => {
     if (risk < 50) return 'text-green-600';
     if (risk < 75) return 'text-yellow-600';
@@ -25,8 +30,8 @@ export function StrategyPerformance({ data }: StrategyPerformanceProps) {
           <Award className="h-4 w-4 text-blue-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{data.winRate.toFixed(1)}%</div>
-          <Progress value={data.winRate} className="mt-2 h-2" />
+          <div className="text-2xl font-bold">{winRate.toFixed(1)}%</div>
+          <Progress value={winRate} className="mt-2 h-2" />
           <p className="text-xs text-muted-foreground mt-1">Percentage of profitable trades</p>
         </CardContent>
       </Card>
@@ -37,7 +42,7 @@ export function StrategyPerformance({ data }: StrategyPerformanceProps) {
           <Clock className="h-4 w-4 text-purple-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{data.avgTradeDuration}</div>
+          <div className="text-2xl font-bold">{avgTradeDuration}</div>
           <p className="text-xs text-muted-foreground mt-1">Average holding period</p>
         </CardContent>
       </Card>
@@ -45,13 +50,13 @@ export function StrategyPerformance({ data }: StrategyPerformanceProps) {
       <Card className="bg-card/50 backdrop-blur-sm border-border/50">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Risk Exposure</CardTitle>
-          <AlertTriangle className={`h-4 w-4 ${getRiskColor(data.riskExposure)}`} />
+          <AlertTriangle className={`h-4 w-4 ${getRiskColor(riskExposure)}`} />
         </CardHeader>
         <CardContent>
-          <div className={`text-2xl font-bold ${getRiskColor(data.riskExposure)}`}>
-            {data.riskExposure}%
+          <div className={`text-2xl font-bold ${getRiskColor(riskExposure)}`}>
+            {riskExposure}%
           </div>
-          <Progress value={data.riskExposure} className="mt-2 h-2" />
+          <Progress value={riskExposure} className="mt-2 h-2" />
           <p className="text-xs text-muted-foreground mt-1">Current portfolio risk level</p>
         </CardContent>
       </Card>

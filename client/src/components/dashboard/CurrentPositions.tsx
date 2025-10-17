@@ -27,11 +27,11 @@ interface Position {
 }
 
 interface CurrentPositionsProps {
-  positions: Position[];
+  positions?: Position[];
   onPositionClosed: () => void;
 }
 
-export function CurrentPositions({ positions, onPositionClosed }: CurrentPositionsProps) {
+export function CurrentPositions({ positions = [], onPositionClosed }: CurrentPositionsProps) {
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -82,7 +82,14 @@ export function CurrentPositions({ positions, onPositionClosed }: CurrentPositio
               </TableRow>
             </TableHeader>
             <TableBody>
-              {positions.map((position) => (
+              {positions.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                    No positions found. Connect your Alpaca account to view positions.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                positions.map((position) => (
                 <TableRow key={position.symbol}>
                   <TableCell className="font-medium">{position.symbol}</TableCell>
                   <TableCell className="text-right">{position.quantity}</TableCell>
@@ -107,7 +114,7 @@ export function CurrentPositions({ positions, onPositionClosed }: CurrentPositio
                     </Button>
                   </TableCell>
                 </TableRow>
-              ))}
+              )))}
             </TableBody>
           </Table>
         </CardContent>
