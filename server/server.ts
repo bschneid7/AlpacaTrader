@@ -10,6 +10,7 @@ import analyticsRoutes from './routes/analyticsRoutes';
 import monitoringRoutes from './routes/monitoringRoutes';
 import { connectDB } from './config/database';
 import { autoTradingJob } from './jobs/autoTradingJob';
+import portfolioSyncJob from './jobs/portfolioSyncJob';
 import cors from 'cors';
 
 // Load environment variables
@@ -78,5 +79,15 @@ app.listen(port, async () => {
   } catch (error) {
     console.error('[Server] Failed to start auto trading job:', error);
     // Don't exit - server can still run without the trading job
+  }
+
+  // Start portfolio sync background job
+  try {
+    console.log('[Server] Starting portfolio sync background job...');
+    portfolioSyncJob.startPortfolioSyncJob();
+    console.log('[Server] Portfolio sync background job started successfully');
+  } catch (error) {
+    console.error('[Server] Failed to start portfolio sync job:', error);
+    // Don't exit - server can still run without the portfolio sync job
   }
 });

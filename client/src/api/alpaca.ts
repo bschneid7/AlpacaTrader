@@ -34,11 +34,30 @@ export const getAccountOverview = async () => {
   }
 };
 
-// Description: Get Current Positions
+// Description: Get Real-Time Portfolio Value
+// Endpoint: GET /api/alpaca/portfolio
+// Request: {}
+// Response: { totalValue: number, equity: number, cash: number, buyingPower: number, dayPL: number, dayPLPercent: number, unrealizedPL: number, unrealizedPLPercent: number, lastUpdated: string }
+export const getPortfolio = async () => {
+  try {
+    const response = await api.get('/api/alpaca/portfolio');
+    return response.data;
+  } catch (error: unknown) {
+    const err = error as { response?: { data?: { error?: string } }; message?: string };
+    const errorMessage = err?.response?.data?.error || err.message || 'Unknown error';
+    // Only log if it's not the expected "account not connected" error
+    if (errorMessage !== 'Alpaca account not connected') {
+      console.error(error);
+    }
+    throw new Error(errorMessage);
+  }
+};
+
+// Description: Get Current Positions with Real-Time P&L
 // Endpoint: GET /api/alpaca/positions
 // Request: {}
-// Response: { positions: Array<{ symbol: string, quantity: number, entryPrice: number, currentPrice: number, unrealizedPL: number, unrealizedPLPercent: number, positionSize: number }> }
-export const getCurrentPositions = async () => {
+// Response: { positions: Array<{ symbol: string, qty: number, avgEntryPrice: number, currentPrice: number, marketValue: number, costBasis: number, unrealizedPL: number, unrealizedPLPercent: number, side: string, exchange: string, assetClass: string }> }
+export const getPositions = async () => {
   try {
     const response = await api.get('/api/alpaca/positions');
     return response.data;
@@ -50,6 +69,24 @@ export const getCurrentPositions = async () => {
       console.error(error);
     }
     throw new Error(errorMessage);
+  }
+};
+
+// Deprecated: Use getPositions instead
+export const getCurrentPositions = getPositions;
+
+// Description: Sync Positions to Database
+// Endpoint: POST /api/alpaca/positions/sync
+// Request: {}
+// Response: { success: boolean, message: string }
+export const syncPositions = async () => {
+  try {
+    const response = await api.post('/api/alpaca/positions/sync');
+    return response.data;
+  } catch (error: unknown) {
+    console.error(error);
+    const err = error as { response?: { data?: { error?: string } }; message?: string };
+    throw new Error(err?.response?.data?.error || err.message || 'Unknown error');
   }
 };
 

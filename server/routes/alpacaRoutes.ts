@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import { requireUser } from './middlewares/auth';
 import AlpacaService from '../services/alpacaService';
+import PortfolioService from '../services/portfolioService';
 
 const router = express.Router();
 
@@ -83,19 +84,48 @@ router.get('/account', requireUser(), async (req: AuthRequest, res: Response) =>
   }
 });
 
-// Description: Get Current Positions
+// Description: Get Real-Time Portfolio Value
+// Endpoint: GET /api/alpaca/portfolio
+// Request: {}
+// Response: { totalValue: number, equity: number, cash: number, buyingPower: number, dayPL: number, dayPLPercent: number, unrealizedPL: number, unrealizedPLPercent: number, lastUpdated: string }
+router.get('/portfolio', requireUser(), async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    console.log(`Fetching real-time portfolio value for user: ${req.user.email}`);
+
+    const portfolio = await PortfolioService.calculatePortfolioValue(req.user._id);
+
+    res.status(200).json(portfolio);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      // Only log if it's NOT the expected "account not connected" error
+      if (error.message !== 'Alpaca account not connected') {
+        console.error(`Error fetching portfolio value: ${error.message}`);
+      }
+      res.status(400).json({ error: error.message });
+    } else {
+      console.error('Unknown error fetching portfolio value');
+      res.status(500).json({ error: 'Failed to fetch portfolio value' });
+    }
+  }
+});
+
+// Description: Get Current Positions with Real-Time P&L
 // Endpoint: GET /api/alpaca/positions
 // Request: {}
-// Response: { positions: Array<{ symbol: string, quantity: number, entryPrice: number, currentPrice: number, unrealizedPL: number, unrealizedPLPercent: number, positionSize: number }> }
+// Response: { positions: Array<{ symbol: string, qty: number, avgEntryPrice: number, currentPrice: number, marketValue: number, costBasis: number, unrealizedPL: number, unrealizedPLPercent: number, side: string, exchange: string, assetClass: string }> }
 router.get('/positions', requireUser(), async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    console.log(`Fetching positions for user: ${req.user.email}`);
+    console.log(`Fetching real-time positions for user: ${req.user.email}`);
 
-    const positions = await AlpacaService.getPositions(req.user._id);
+    const positions = await PortfolioService.getPositionsWithPL(req.user._id);
 
     res.status(200).json({ positions });
   } catch (error: unknown) {
@@ -301,6 +331,35 @@ router.get('/trades/recent', requireUser(), async (req: AuthRequest, res: Respon
     } else {
       console.error('Unknown error fetching recent trades');
       res.status(500).json({ error: 'Failed to fetch recent trades' });
+    }
+  }
+});
+
+// Description: Sync Positions to Database
+// Endpoint: POST /api/alpaca/positions/sync
+// Request: {}
+// Response: { success: boolean, message: string }
+router.post('/positions/sync', requireUser(), async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    console.log(`Syncing positions to database for user: ${req.user.email}`);
+
+    await PortfolioService.syncPositionsToDatabase(req.user._id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Positions synced successfully',
+    });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error(`Error syncing positions: ${error.message}`);
+      res.status(400).json({ error: error.message });
+    } else {
+      console.error('Unknown error syncing positions');
+      res.status(500).json({ error: 'Failed to sync positions' });
     }
   }
 });
