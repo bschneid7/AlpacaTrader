@@ -5,7 +5,7 @@
 
 import Alpaca from '@alpacahq/alpaca-trade-api';
 import * as strategyService from './strategyService.js';
-import * as riskService from './riskService.js';
+import riskService from './riskService.js';
 import monitoringService from './monitoringService.js';
 import * as technicalIndicators from './technicalIndicators.js';
 import * as strategyEngine from './strategyEngine.js';
@@ -247,7 +247,7 @@ export async function scanForBuySignals(userId: string, alpaca: any): Promise<Tr
           console.log(`[Trading Engine] BUY SIGNAL: ${symbol} at $${currentPrice} (strength: ${technicals.strength})`);
 
           // Log activity
-          await monitoringService.createActivityLog(
+          await monitoringService.logActivity(
             userId,
             'analysis',
             `Buy signal detected for ${symbol}`,
@@ -320,7 +320,7 @@ export async function scanForSellSignals(userId: string, alpaca: any): Promise<T
           console.log(`[Trading Engine] SELL SIGNAL: ${position.symbol} at $${currentPrice} (reason: ${sellDecision.reason})`);
 
           // Log activity
-          await monitoringService.createActivityLog(
+          await monitoringService.logActivity(
             userId,
             'analysis',
             `Sell signal detected for ${position.symbol} (${sellDecision.reason})`,
@@ -395,7 +395,7 @@ export async function executeBuyOrder(userId: string, alpaca: any, signal: Trade
     });
 
     // Log activity
-    await monitoringService.createActivityLog(
+    await monitoringService.logActivity(
       userId,
       'trade',
       `Buy order submitted: ${quantity} shares of ${signal.symbol} at ~$${signal.price}`,
@@ -414,7 +414,7 @@ export async function executeBuyOrder(userId: string, alpaca: any, signal: Trade
   } catch (error) {
     console.error(`[Trading Engine] Error executing buy order for ${signal.symbol}:`, error);
 
-    await monitoringService.createActivityLog(
+    await monitoringService.logActivity(
       userId,
       'error',
       `Failed to execute buy order for ${signal.symbol}: ${error.message}`,
@@ -461,7 +461,7 @@ export async function executeSellOrder(userId: string, alpaca: any, signal: Trad
     });
 
     // Log activity
-    await monitoringService.createActivityLog(
+    await monitoringService.logActivity(
       userId,
       'trade',
       `Sell order submitted: ${signal.quantity} shares of ${signal.symbol} at ~$${signal.price} (${signal.reason})`,
@@ -485,7 +485,7 @@ export async function executeSellOrder(userId: string, alpaca: any, signal: Trad
   } catch (error) {
     console.error(`[Trading Engine] Error executing sell order for ${signal.symbol}:`, error);
 
-    await monitoringService.createActivityLog(
+    await monitoringService.logActivity(
       userId,
       'error',
       `Failed to execute sell order for ${signal.symbol}: ${error.message}`,
@@ -579,7 +579,7 @@ export async function processUserTrading(userId: string): Promise<void> {
     if (riskLimits.haltTrading) {
       console.log(`[Trading Engine] Trading halted for user ${userId} due to risk limits`);
 
-      await monitoringService.createActivityLog(
+      await monitoringService.logActivity(
         userId,
         'risk',
         'Trading halted due to risk limit breach',
@@ -659,7 +659,7 @@ export async function processUserTrading(userId: string): Promise<void> {
     console.error(`[Trading Engine] Error processing user trading for ${userId}:`, error);
 
     try {
-      await monitoringService.createActivityLog(
+      await monitoringService.logActivity(
         userId,
         'error',
         `Trading engine error: ${error.message}`,
