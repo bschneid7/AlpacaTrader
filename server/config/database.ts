@@ -5,7 +5,16 @@ dotenv.config();
 
 const connectDB = async (): Promise<void> => {
   try {
-    const conn = await mongoose.connect(process.env.DATABASE_URL!);
+    // Enhanced connection options for stability
+    const conn = await mongoose.connect(process.env.DATABASE_URL!, {
+      maxPoolSize: 10,
+      minPoolSize: 2,
+      socketTimeoutMS: 45000,
+      serverSelectionTimeoutMS: 10000,
+      heartbeatFrequencyMS: 10000,
+      retryWrites: true,
+      retryReads: true,
+    });
 
     console.log(`MongoDB Connected: ${conn.connection.host}`);
 
@@ -14,11 +23,15 @@ const connectDB = async (): Promise<void> => {
     });
 
     mongoose.connection.on('disconnected', () => {
-      console.warn('MongoDB disconnected. Attempting to reconnect...');
+      console.warn('MongoDB disconnected. Mongoose will automatically reconnect...');
     });
 
     mongoose.connection.on('reconnected', () => {
       console.info('MongoDB reconnected');
+    });
+
+    mongoose.connection.on('connected', () => {
+      console.log('MongoDB connected successfully');
     });
 
     process.on('SIGINT', async () => {
@@ -33,8 +46,9 @@ const connectDB = async (): Promise<void> => {
     });
 
   } catch (error) {
-    console.error(`Error: ${(error as Error).message}`);
-    process.exit(1);
+    console.error(`MongoDB connection failed: ${(error as Error).message}`);
+    console.error('Retrying in 5 seconds...');
+    setTimeout(connectDB, 5000);
   }
 };
 

@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    container_name: alpacatrader-client
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - server
+    volumes:
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    restart: unless-stopped
+    networks:
+      - alpacatrader-network
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    container_name: alpacatrader-server
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./server/.env
+    restart: unless-stopped
+    networks:
+      - alpacatrader-network
+
+networks:
+  alpacatrader-network:
+    driver: bridge
