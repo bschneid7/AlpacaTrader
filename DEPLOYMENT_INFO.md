@@ -3,12 +3,12 @@
 ## 🌐 Access Your Application
 
 ### Primary URL (HTTPS - Recommended)
-**https://146.190.132.152**
+**https://<your-server-ip>**
 
 ### HTTP URL (redirects to HTTPS)
-**http://146.190.132.152**
+**http://<your-server-ip>**
 
-⚠️ **SSL Certificate Note**: Your browser will show a security warning because we're using a self-signed certificate. This is normal and safe for your personal use. Click "Advanced" → "Proceed to 146.190.132.152" to continue.
+⚠️ **SSL Certificate Note**: Your browser will show a security warning because we're using a self-signed certificate. This is normal and safe for your personal use. Click "Advanced" → "Proceed to <your-server-ip>" to continue.
 
 ---
 
@@ -28,7 +28,7 @@
 
 ### Quick Commands
 
-Run these commands from your server (SSH: `ssh bryan@146.190.132.152`):
+Run these commands from your server (SSH: `ssh <username>@<your-server-ip>`):
 
 ```bash
 # Check application status
@@ -61,7 +61,7 @@ Run these commands from your server (SSH: `ssh bryan@146.190.132.152`):
 ## 🔐 Environment Configuration
 
 Your environment variables are stored in:
-- **Location**: `/home/bryan/AlpacaTrader/server/.env`
+- **Location**: `/home/<username>/AlpacaTrader/server/.env`
 - **Configured Variables**:
   - ✅ `DATABASE_URL` - MongoDB Atlas connection
   - ✅ `MONGODB_URI` - MongoDB Atlas connection (alternative)
@@ -75,7 +75,7 @@ Your environment variables are stored in:
 
 ```bash
 # SSH into your server
-ssh bryan@146.190.132.152
+ssh <username>@<your-server-ip>
 
 # Edit the .env file
 nano ~/AlpacaTrader/server/.env
@@ -95,7 +95,7 @@ nano ~/AlpacaTrader/server/.env
 ## 📁 Application Structure
 
 ```
-/home/bryan/AlpacaTrader/
+/home/<username>/AlpacaTrader/
 ├── client/                  # Frontend (React/Vite)
 ├── server/                  # Backend (Node.js/Express)
 │   └── .env                # Environment variables
@@ -115,7 +115,7 @@ nano ~/AlpacaTrader/server/.env
 ## 🚀 Next Steps
 
 1. **Access Your App**
-   - Open https://146.190.132.152 in your browser
+   - Open https://<your-server-ip> in your browser
    - Accept the SSL certificate warning
    - You should see the AlpacaTrader login/signup page
 
@@ -162,7 +162,7 @@ nano ~/AlpacaTrader/server/.env
 ```bash
 # Check MongoDB Atlas:
 # 1. Cluster is running (not paused)
-# 2. Network access allows your server IP (146.190.132.152)
+# 2. Network access allows your server IP (<your-server-ip>)
 # 3. Database user credentials are correct
 
 # Check connection in logs
@@ -173,14 +173,14 @@ nano ~/AlpacaTrader/server/.env
 
 ```bash
 # SSH into server
-ssh bryan@146.190.132.152
+ssh <username>@<your-server-ip>
 
 # Regenerate certificate
 cd ~/AlpacaTrader/nginx/ssl
 sudo rm cert.pem key.pem
 sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -keyout key.pem -out cert.pem \
-  -subj '/C=US/ST=California/L=Sacramento/O=AlpacaTrader/CN=146.190.132.152'
+  -subj '/C=US/ST=California/L=Sacramento/O=AlpacaTrader/CN=<your-server-ip>'
 
 # Restart containers
 cd ~/AlpacaTrader
@@ -219,7 +219,7 @@ When you push new code to GitHub:
 
 ```bash
 # SSH into server
-ssh bryan@146.190.132.152
+ssh <username>@<your-server-ip>
 
 # Update application
 ./manage-alpacatrader.sh update
@@ -260,9 +260,9 @@ sudo certbot --nginx -d yourdomain.com
 
 | File | Purpose | Backup? |
 |------|---------|---------|
-| `/home/bryan/AlpacaTrader/server/.env` | Environment variables & secrets | ✅ Yes |
-| `/home/bryan/AlpacaTrader/nginx/ssl/` | SSL certificates | ⚠️ Regenerable |
-| `/home/bryan/manage-alpacatrader.sh` | Management script | ⚠️ Regenerable |
+| `/home/<username>/AlpacaTrader/server/.env` | Environment variables & secrets | ✅ Yes |
+| `/home/<username>/AlpacaTrader/nginx/ssl/` | SSL certificates | ⚠️ Regenerable |
+| `/home/<username>/manage-alpacatrader.sh` | Management script | ⚠️ Regenerable |
 
 ### Backup Your .env File
 
@@ -271,7 +271,7 @@ sudo certbot --nginx -d yourdomain.com
 cp ~/AlpacaTrader/server/.env ~/AlpacaTrader/server/.env.backup
 
 # Copy to your local machine
-scp bryan@146.190.132.152:~/AlpacaTrader/server/.env ~/Desktop/alpacatrader-env-backup.txt
+scp <username>@<your-server-ip>:~/AlpacaTrader/server/.env ~/Desktop/alpacatrader-env-backup.txt
 ```
 
 ---
@@ -291,9 +291,9 @@ If you encounter issues:
 
 Your application is secured with these auto-generated secrets:
 
-- **JWT Secret**: `4e63bf3f6184c498d035fcfac6d1171a7fd3057a7789adf2f9da59fdb87879dc`
-- **Refresh Token Secret**: `166fefb129a6ec8a208e1790124ea293d531c3c6e8821ef81f05f209675fbbc1`
-- **Encryption Key**: `ce98ca9cbd577f8681b62ea7bba3b255246a011a4567429e4d51e0e300703d01`
+- **JWT Secret**: `<your-generated-secret-here>`
+- **Refresh Token Secret**: `<your-generated-secret-here>`
+- **Encryption Key**: `<your-generated-secret-here>`
 
 **Keep these safe!** They're stored in your .env file and should not be shared.
 
@@ -303,7 +303,7 @@ Your application is secured with these auto-generated secrets:
 
 Your AlpacaTrader application is now live and running at:
 
-### **https://146.190.132.152**
+### **https://<your-server-ip>**
 
 The application will automatically start when the server reboots thanks to Docker's restart policy.
 
