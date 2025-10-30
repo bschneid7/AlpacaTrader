@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Alpaca from '@alpacahq/alpaca-trade-api';
 import AlpacaAccount from '../models/AlpacaAccount';
 import Position from '../models/Position';
@@ -40,19 +41,19 @@ const CACHE_TTL = 10000; // 10 seconds
 async function getAlpacaClient(userId: string): Promise<Alpaca> {
   console.log(`[PortfolioService] Getting Alpaca client for user ${userId}`);
 
-  const alpacaAccount = await AlpacaAccount.findOne({ userId, status: 'connected' });
+  const alpacaAccount = await AlpacaAccount.findOne({ userId: new mongoose.Types.ObjectId(userId), isConnected: true });
 
   if (!alpacaAccount) {
     throw new Error('Alpaca account not connected');
   }
 
   const apiKey = decrypt(alpacaAccount.apiKey);
-  const apiSecret = decrypt(alpacaAccount.apiSecret);
+  const apiSecret = decrypt(alpacaAccount.secretKey);
 
   return new Alpaca({
     keyId: apiKey,
     secretKey: apiSecret,
-    paper: alpacaAccount.isPaper,
+    paper: alpacaAccount.isPaperTrading,
   });
 }
 

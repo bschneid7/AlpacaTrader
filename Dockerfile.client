@@ -1,0 +1,32 @@
+FROM node:20-alpine as builder
+
+WORKDIR /app
+
+# Copy package files
+COPY client/package*.json ./client/
+COPY shared/package*.json ./shared/
+
+# Copy source code
+COPY shared ./shared
+COPY client ./client
+
+# Build shared package first
+WORKDIR /app/shared
+RUN npm install && npm run build
+
+# Build client
+WORKDIR /app/client
+RUN npm install && npm run build
+
+# Production stage with nginx
+FROM nginx:alpine
+
+# Copy built files
+COPY --from=builder /app/client/dist /usr/share/nginx/html
+
+# Copy nginx config
+COPY nginx/default.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80 443
+
+CMD ["nginx", "-g", "daemon off;"]
