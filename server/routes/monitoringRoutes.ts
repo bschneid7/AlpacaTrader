@@ -202,4 +202,31 @@ router.post('/alerts/:alertId/acknowledge', requireUser(), async (req: Request, 
   }
 });
 
+
+// Description: Get a comprehensive health summary
+// Endpoint: GET /api/monitoring/health-summary
+// Request: {}
+// Response: { ... }
+router.get(
+  "/health-summary",
+  requireUser(),
+  async (req: Request, res: Response) => {
+    try {
+      console.log(`[MonitoringRoutes] GET /health-summary - User: ${req.user?._id}`);
+      const summary = await monitoringService.getHealthSummary(
+        req.user!._id.toString()
+      );
+      res.status(200).json(summary);
+    } catch (error) {
+      console.error("[MonitoringRoutes] Error fetching health summary:", error);
+      res.status(500).json({
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to fetch health summary",
+      });
+    }
+  }
+);
+
 export default router;

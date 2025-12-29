@@ -4,6 +4,7 @@ import ActivityLog, { IActivityLog } from '../models/ActivityLog';
 import Alert, { IAlert } from '../models/Alert';
 import AlpacaAccount from '../models/AlpacaAccount';
 import mongoose from 'mongoose';
+import alpacaService from './alpacaService';
 
 /**
  * Monitoring Service
@@ -368,6 +369,45 @@ export const acknowledgeAlert = async (userId: string, alertId: string): Promise
   }
 };
 
+// Get comprehensive health summary including holdings
+export const getHealthSummary = async (userId: string): Promise<any> => {
+  console.log(`[MonitoringService] Generating health summary for user: ${userId}`);
+  try {
+    // 1. Get account overview
+    let account = null;
+    try {
+      account = await alpacaService.getAccountOverview(userId);
+    } catch (e) {
+      console.warn(`[MonitoringService] Could not fetch account overview:`, e);
+    }
+
+    // 2. Get current positions (holdings)
+    let holdings = [];
+    try {
+      holdings = await alpacaService.getPositions(userId);
+    } catch (e) {
+      console.warn(`[MonitoringService] Could not fetch positions:`, e);
+    }
+
+    // 3. Get auto-trading status
+    const trading = await alpacaService.getAutoTradingStatus(userId);
+
+    // 4. Get recent alerts
+    const recentAlerts = await getAlerts(userId, { limit: 5, unreadOnly: true });
+
+    return {
+      account,
+      holdings,
+      trading,
+      recentAlerts,
+      timestamp: new Date()
+    };
+  } catch (error) {
+    console.error(`[MonitoringService] Error generating health summary:`, error);
+    throw new Error(`Failed to generate health summary: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
 export default {
   getWatchlist,
   addToWatchlist,
@@ -380,5 +420,6 @@ export default {
   getAlerts,
   createAlert,
   markAlertAsRead,
-  acknowledgeAlert
+  acknowledgeAlert,
+  getHealthSummary
 };
