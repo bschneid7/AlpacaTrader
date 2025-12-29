@@ -129,10 +129,10 @@ function request(url, method = 'GET', body = null, token = null) {
 async function login(email, password) {
   console.log(`${colors.cyan}Logging in as ${email}...${colors.reset}`);
   const res = await request(`https://${SERVER_IP}/api/auth/login`, 'POST', { email, password });
-  if (res.ok && res.data.token) {
-    saveAuth(res.data.token);
+  if (res.ok && res.data.accessToken) {
+    saveAuth(res.data.accessToken);
     console.log(`${colors.green}✅ Login successful! Credentials saved.${colors.reset}\n`);
-    return res.data.token;
+    return res.data.accessToken;
   } else {
     console.log(`${colors.red}❌ Login failed: ${res.data?.message || 'Invalid credentials'}${colors.reset}`);
     return null;
